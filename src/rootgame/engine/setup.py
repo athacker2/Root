@@ -1,4 +1,12 @@
-from rootgame.engine.types import Board, Clearing
+from rootgame.engine.types import Player, Clearing, Board, GameState
+
+def initialize_game():
+    # Initialize players, board, and game state
+    players = [Player() for _ in range(2)]  # Assuming 2 players for now
+    board = build_board()
+    game_state = GameState(players=players, board=board)
+    
+    return game_state
 
 def build_board():
     board = Board(clearings=[Clearing() for _ in range(12)])

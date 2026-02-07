@@ -60,4 +60,7 @@ class Game:
 
         return False
     
+    def get_clearing_state(self):
+        return {clearing_id: "test" for clearing_id, _ in enumerate(self.board.clearings)}
+    
 

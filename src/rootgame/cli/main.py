@@ -1,14 +1,18 @@
 from rootgame.engine.Game import Game
+from rootgame.cli.map_renderer import AsciiBoardRenderer, EDGES, POSITIONS
 
 
 def main():
     game = Game()
+    renderer = AsciiBoardRenderer(width=90, height=30, positions=POSITIONS, edges=EDGES)
 
     for _ in range(5):  # Simulate 5 rounds for demonstration
         for i, player in enumerate(game.players):
             
             while(True):
                 print(f"Player {i + 1}'s turn. Current phase: {game.current_phase.name}")
+                print(renderer.render(game.get_clearing_state()))
+                
                 legal_actions = game.get_legal_actions(player)
                 print(f"Player {i + 1} actions:")
                 for(j, action) in enumerate(legal_actions):

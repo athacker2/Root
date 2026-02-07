@@ -19,3 +19,9 @@ class GameState:
     players: list[Player]
     board: Board | None
     turn: int = 0
+
+@dataclass
+class Card:
+    name: str
+    suit: str
+    value: int

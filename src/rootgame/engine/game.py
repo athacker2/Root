@@ -4,7 +4,6 @@ from rootgame.engine.Board import Board
 from rootgame.engine.Deck import Deck
 from rootgame.engine.Player import Player
 
-@dataclass
 class TurnPhase(Enum):
     BIRDSONG = 1
     DAYLIGHT = 2
@@ -39,7 +38,7 @@ class Game:
     def apply_action(self, player: Player, action: str):
         # Check if is legal action
         if(action not in self.get_legal_actions(player)):
-            raise("Illegal Action Received")
+            raise ValueError("Illegal Action Received")
 
         if action == "march":
             print("marching troops")
@@ -48,13 +47,13 @@ class Game:
             player.hand = [c for c in player.hand if c.name != card]  # Remove the card from player's hand
             print(f"Playing card: {card}")
         elif action == "end phase":
-            if(self.current_phase is TurnPhase.BIRDSONG):
+            if(self.current_phase == TurnPhase.BIRDSONG):
                 self.current_phase = TurnPhase.DAYLIGHT
                 return False
-            elif self.current_phase is TurnPhase.DAYLIGHT:
+            elif self.current_phase == TurnPhase.DAYLIGHT:
                 self.current_phase = TurnPhase.EVENING
                 return False
-            elif self.current_phase is TurnPhase.EVENING:
+            elif self.current_phase == TurnPhase.EVENING:
                 self.current_phase = TurnPhase.BIRDSONG
                 self.turn += 1
                 return True

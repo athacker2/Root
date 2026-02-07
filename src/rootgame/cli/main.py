@@ -1,15 +1,15 @@
-from rootgame.engine.EngineLogic import *
+from rootgame.engine.Game import Game
 
 
 def main():
-    game = initialize_game()
+    game = Game()
 
     for _ in range(5):  # Simulate 5 rounds for demonstration
         for i, player in enumerate(game.players):
             
             while(True):
                 print(f"Player {i + 1}'s turn. Current phase: {game.current_phase.name}")
-                legal_actions = get_legal_actions(game, player)
+                legal_actions = game.get_legal_actions(player)
                 print(f"Player {i + 1} actions:")
                 for(j, action) in enumerate(legal_actions):
                     print(f"{j}: {action}")
@@ -23,7 +23,7 @@ def main():
                     except ValueError:
                         print("Please enter a valid integer for the action.")
 
-                turn_over = apply_action(game, player, legal_actions[chosen_action])
+                turn_over = game.apply_action(player, legal_actions[chosen_action])
             
                 print("-" * 50)  # Separator for readability
 

@@ -1,21 +1,4 @@
-from rootgame.engine.types import Player, Clearing, Board, GameState, Card, Deck
-
-def initialize_game():
-    # Initialize players, board, and game state
-    players = [Player() for _ in range(2)]  # Assuming 2 players for now
-    board = build_board()
-
-    deck = Deck(cards=[])
-    deck.initialize_deck()
-    deck.shuffle_deck()
-
-    for player in players:
-        player.score = 0  # Initialize player scores
-        player.hand = deck.draw_card(5)  # Each player starts with 5 cards
-
-    game_state = GameState(players=players, board=board, deck=deck)
-    
-    return game_state
+from rootgame.engine.types import Clearing, Board
 
 def build_board():
     board = Board(clearings=[Clearing() for _ in range(12)])

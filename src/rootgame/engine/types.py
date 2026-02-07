@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+from enum import Enum
 import random
 
 @dataclass
@@ -44,8 +45,15 @@ class Board:
     clearings: list[Clearing]
 
 @dataclass
+class TurnPhase(Enum):
+    BIRDSONG = 1
+    DAYLIGHT = 2
+    EVENING = 3
+
+@dataclass
 class GameState:
     players: list[Player]
     board: Board 
     deck: Deck
+    current_phase: TurnPhase = TurnPhase.BIRDSONG
     turn: int = 0

@@ -2,18 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from typing import Dict, Iterable, List, Tuple, Optional
-
-
-# ----------------------------
-# Your data model
-# ----------------------------
-
-@dataclass
-class ClearingInfo:
-    tiles: List[str] = field(default_factory=list)
-    warriors: Dict[str, int] = field(default_factory=dict)          # e.g. {"C": 2, "E": 1}
-    tokens: Dict[str, List[str]] = field(default_factory=dict)      # e.g. {"sympathy": ["s1"], "keep": ["k"]}
-    suit: str = ""                                                  # e.g. "fox"
+from shared.shared_types import ClearingInfo
 
 
 # ----------------------------

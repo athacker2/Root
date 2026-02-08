@@ -16,7 +16,7 @@ class Building(StrEnum):
 @dataclass
 class Clearing:
     adjacentClearings: list[int] = field(default_factory=list)
-    tiles: list[str] = field(default_factory=list)
+    tiles: list[Building] = field(default_factory=list)
     warriors: dict[Character, int] = field(default_factory=dict)
     tokens: dict[Character, list[Token]] = field(default_factory=dict)
     suit: str = ""
@@ -28,7 +28,7 @@ class Clearing:
         self.warriors[character] = self.warriors.get(character, 0) + count
     
     def add_building(self, building: Building):
-        self.tiles.append(building.name)
+        self.tiles.append(building)
 
 class Board:
     clearings: list[Clearing]

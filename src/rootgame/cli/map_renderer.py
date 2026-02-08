@@ -1,29 +1,66 @@
 from __future__ import annotations
-from typing import Dict, Iterable, List, Tuple
 
+from dataclasses import dataclass, field
+from typing import Dict, Iterable, List, Tuple, Optional
+
+
+# ----------------------------
+# Your data model
+# ----------------------------
+
+@dataclass
+class ClearingInfo:
+    tiles: List[str] = field(default_factory=list)
+    warriors: Dict[str, int] = field(default_factory=dict)          # e.g. {"C": 2, "E": 1}
+    tokens: Dict[str, List[str]] = field(default_factory=dict)      # e.g. {"sympathy": ["s1"], "keep": ["k"]}
+    suit: str = ""                                                  # e.g. "fox"
+
+
+# ----------------------------
+# Layout helpers
+# ----------------------------
+
+def scale_positions(
+    positions: Dict[int, Tuple[int, int]],
+    sx: int = 2,
+    sy: int = 2,
+    ox: int = 0,
+    oy: int = 0,
+) -> Dict[int, Tuple[int, int]]:
+    """Scale and offset top-left node coordinates (keeps your originals intact)."""
+    return {k: (ox + x * sx, oy + y * sy) for k, (x, y) in positions.items()}
+
+
+def compute_canvas_size(
+    positions: Dict[int, Tuple[int, int]],
+    node_w: int,
+    node_h: int,
+    margin: int = 4,
+) -> Tuple[int, int]:
+    """Compute a canvas size that fits all nodes plus a margin."""
+    max_x = max(x for x, _ in positions.values())
+    max_y = max(y for _, y in positions.values())
+    return (max_x + node_w + margin, max_y + node_h + margin)
+
+
+# ----------------------------
+# ASCII Renderer
+# ----------------------------
 
 class AsciiBoardRenderer:
     """
-    Renders a node+edge graph onto an ASCII canvas.
-
-    Node box (7x3):
-        .-----.
-        |05 hi|
-        '-----'
-
-    Edges:
-      - Connect from *border-to-border* of node boxes (not center-to-center)
-      - Uses '-', '|', '/', '\\' for diagonals
-      - Merges crossings with '+'
+    Multi-line node cards + cleaner edges (border-to-border, diagonal-capable),
+    with improved rectangle-line intersection so edges hit the box neatly.
     """
-    NODE_W = 7
-    NODE_H = 3
+
+    NODE_W = 17
+    NODE_H = 7
 
     def __init__(
         self,
         width: int,
         height: int,
-        positions: Dict[int, Tuple[int, int]],   # node_id -> (x, y) top-left
+        positions: Dict[int, Tuple[int, int]],   # node_id -> (x, y) top-left of node
         edges: Iterable[Tuple[int, int]],
     ) -> None:
         self.width = width
@@ -31,45 +68,72 @@ class AsciiBoardRenderer:
         self.positions = positions
         self.edges = {self._norm_edge(a, b) for a, b in edges}
 
-    def render(self, notes: Dict[int, str]) -> str:
+    def render(self, info_by_clearing: Dict[int, ClearingInfo]) -> str:
         canvas = [[" " for _ in range(self.width)] for _ in range(self.height)]
 
         # 1) edges first
         for a, b in sorted(self.edges):
             self._draw_edge(canvas, a, b)
 
-        # 2) nodes second (overwrite any edge artifacts inside the box)
+        # 2) nodes second (nodes overwrite edge artifacts inside their boxes)
         for node_id, (x, y) in self.positions.items():
-            note = notes.get(node_id, "")
-            self._draw_node(canvas, node_id, x, y, note)
+            info = info_by_clearing.get(node_id, ClearingInfo())
+            lines = self._format_node_lines(node_id, info)
+            self._draw_node(canvas, x, y, lines)
 
         return "\n".join("".join(row).rstrip() for row in canvas).rstrip()
 
-    # ---------------- internals ----------------
+    # ---------------- Node formatting ----------------
 
-    def _draw_node(self, canvas: List[List[str]], node_id: int, x: int, y: int, note: str) -> None:
-        if not self._in_bounds(x, y) or not self._in_bounds(x + self.NODE_W - 1, y + self.NODE_H - 1):
+    def _format_node_lines(self, node_id: int, info: ClearingInfo) -> List[str]:
+        inner_w = self.NODE_W - 2
+
+        suit = (info.suit or "").upper()
+        header = f"{node_id:02d} {suit}".strip()
+
+        # Warriors: "W: C2 E1"
+        w_parts = [f"{k}{v}" for k, v in sorted(info.warriors.items()) if v]
+        warriors_line = "W: " + (" ".join(w_parts) if w_parts else "-")
+
+        # Tiles/buildings: "B: roost,sawmill"
+        tiles_line = "B: " + (",".join(info.tiles) if info.tiles else "-")
+
+        # Tokens: "T: sympathy(1) keep(1)"
+        tok_bits: List[str] = []
+        for name, items in sorted(info.tokens.items()):
+            cnt = len(items)
+            if cnt:
+                tok_bits.append(f"{name}({cnt})")
+        tokens_line = "T: " + (" ".join(tok_bits) if tok_bits else "-")
+
+        extra_line = ""  # free slot for later
+
+        def pad(s: str) -> str:
+            return s[:inner_w].ljust(inner_w)
+
+        top = "." + "-" * inner_w + "."
+        bottom = "'" + "-" * inner_w + "'"
+
+        return [
+            top,
+            "|" + pad(header) + "|",
+            "|" + pad(warriors_line) + "|",
+            "|" + pad(tiles_line) + "|",
+            "|" + pad(tokens_line) + "|",
+            "|" + pad(extra_line) + "|",
+            bottom,
+        ]
+
+    def _draw_node(self, canvas: List[List[str]], x: int, y: int, lines: List[str]) -> None:
+        if x < 0 or y < 0:
             return
+        if x + self.NODE_W > self.width or y + self.NODE_H > self.height:
+            return
+        for dy, line in enumerate(lines):
+            for dx, ch in enumerate(line):
+                canvas[y + dy][x + dx] = ch
 
-        # Top
-        self._put(canvas, x + 0, y + 0, ".")
-        for i in range(1, self.NODE_W - 1):
-            self._put(canvas, x + i, y + 0, "-")
-        self._put(canvas, x + self.NODE_W - 1, y + 0, ".")
-
-        # Middle: |05 abc|
-        self._put(canvas, x + 0, y + 1, "|")
-        label = f"{node_id:02d}"
-        inside = f"{label} {note}".ljust(self.NODE_W - 2)[: self.NODE_W - 2]
-        for i, ch in enumerate(inside):
-            self._put(canvas, x + 1 + i, y + 1, ch)
-        self._put(canvas, x + self.NODE_W - 1, y + 1, "|")
-
-        # Bottom
-        self._put(canvas, x + 0, y + 2, "'")
-        for i in range(1, self.NODE_W - 1):
-            self._put(canvas, x + i, y + 2, "-")
-        self._put(canvas, x + self.NODE_W - 1, y + 2, "'")
+    # ---------------- Edges ----------------
 
     def _draw_edge(self, canvas: List[List[str]], a: int, b: int) -> None:
         a_rect = self._node_rect(a)
@@ -78,10 +142,8 @@ class AsciiBoardRenderer:
         acx, acy = self._rect_center(a_rect)
         bcx, bcy = self._rect_center(b_rect)
 
-        # border-to-border endpoints
-        start = self._line_rect_intersection_exit(a_rect, (acx, acy), (bcx, bcy))
-        end = self._line_rect_intersection_exit(b_rect, (bcx, bcy), (acx, acy))
-
+        start = self._rect_line_intersection(a_rect, (acx, acy), (bcx, bcy))
+        end = self._rect_line_intersection(b_rect, (bcx, bcy), (acx, acy))
         if start is None or end is None:
             return
 
@@ -101,16 +163,18 @@ class AsciiBoardRenderer:
         x0, y0, x1, y1 = rect
         return ((x0 + x1) // 2, (y0 + y1) // 2)
 
-    def _line_rect_intersection_exit(
+    def _rect_line_intersection(
         self,
         rect: Tuple[int, int, int, int],
         p_inside: Tuple[int, int],
         p_towards: Tuple[int, int],
-    ) -> Tuple[int, int] | None:
+    ) -> Optional[Tuple[int, int]]:
         """
-        Given a rectangle and a point inside it, find the first point *outside* the rect
-        along the ray from p_inside toward p_towards, but return the last point that is
-        still on the border (i.e., the exit point on the rectangle boundary).
+        True rectangle-line intersection from p_inside toward p_towards.
+        Returns an (x,y) integer point on the rectangle boundary.
+
+        Uses parametric ray and finds the earliest boundary hit (t > 0),
+        then rounds to nearest integer boundary point.
         """
         x0, y0, x1, y1 = rect
         cx, cy = p_inside
@@ -120,37 +184,67 @@ class AsciiBoardRenderer:
         if dx == 0 and dy == 0:
             return None
 
-        # Step outward with a normalized-ish direction (sign only for stepping).
-        stepx = 0 if dx == 0 else (1 if dx > 0 else -1)
-        stepy = 0 if dy == 0 else (1 if dy > 0 else -1)
+        candidates: List[Tuple[float, float, float]] = []  # (t, x, y)
 
-        # Walk from center until we would leave; keep the last in-rect point as exit.
-        x, y = cx, cy
-        last_in = (x, y)
-        # Hard cap so we never infinite loop
-        for _ in range(500):
-            nx, ny = x + stepx, y + stepy
-            if x0 <= nx <= x1 and y0 <= ny <= y1:
-                x, y = nx, ny
-                last_in = (x, y)
+        # Intersect with vertical sides x=x0 and x=x1
+        if dx != 0:
+            for x_side in (x0, x1):
+                t = (x_side - cx) / dx
+                if t > 0:
+                    y = cy + t * dy
+                    if y0 <= y <= y1:
+                        candidates.append((t, float(x_side), float(y)))
+
+        # Intersect with horizontal sides y=y0 and y=y1
+        if dy != 0:
+            for y_side in (y0, y1):
+                t = (y_side - cy) / dy
+                if t > 0:
+                    x = cx + t * dx
+                    if x0 <= x <= x1:
+                        candidates.append((t, float(x), float(y_side)))
+
+        if not candidates:
+            return None
+
+        # Pick closest hit
+        t, xf, yf = min(candidates, key=lambda c: c[0])
+
+        # Round to int grid
+        xi = int(round(xf))
+        yi = int(round(yf))
+
+        # Clamp to rect to be safe
+        xi = min(max(xi, x0), x1)
+        yi = min(max(yi, y0), y1)
+
+        # Ensure it's on boundary; if rounding pushed inside, snap to nearest boundary
+        if xi not in (x0, x1) and yi not in (y0, y1):
+            # Snap to the boundary that was actually hit (based on which side was exact)
+            # Prefer matching the float boundary if very close
+            if abs(xf - x0) < 1e-6 or abs(xf - x1) < 1e-6:
+                xi = x0 if abs(xf - x0) < abs(xf - x1) else x1
+            elif abs(yf - y0) < 1e-6 or abs(yf - y1) < 1e-6:
+                yi = y0 if abs(yf - y0) < abs(yf - y1) else y1
             else:
-                break
+                # fallback: push to nearest side
+                dist_left = abs(xi - x0)
+                dist_right = abs(x1 - xi)
+                dist_top = abs(yi - y0)
+                dist_bot = abs(y1 - yi)
+                m = min(dist_left, dist_right, dist_top, dist_bot)
+                if m == dist_left:
+                    xi = x0
+                elif m == dist_right:
+                    xi = x1
+                elif m == dist_top:
+                    yi = y0
+                else:
+                    yi = y1
 
-        # last_in is still inside; we want the border point (which it is).
-        # But ensure it's actually on border.
-        lx, ly = last_in
-        if lx in (x0, x1) or ly in (y0, y1):
-            return last_in
-
-        # If for some reason we didn't land on border (rare with tiny boxes), clamp.
-        lx = min(max(lx, x0), x1)
-        ly = min(max(ly, y0), y1)
-        return (lx, ly)
+        return (xi, yi)
 
     def _bresenham_with_chars(self, x0: int, y0: int, x1: int, y1: int):
-        """
-        Bresenham line; yields (x,y,ch) where ch depends on local direction.
-        """
         dx = abs(x1 - x0)
         dy = -abs(y1 - y0)
         sx = 1 if x0 < x1 else -1
@@ -160,12 +254,10 @@ class AsciiBoardRenderer:
         x, y = x0, y0
         prev = (x, y)
         while True:
-            # pick char based on step from prev -> (x,y)
             px, py = prev
             step_x = x - px
             step_y = y - py
             ch = self._step_char(step_x, step_y)
-
             yield x, y, ch
 
             if x == x1 and y == y1:
@@ -182,7 +274,6 @@ class AsciiBoardRenderer:
 
     @staticmethod
     def _step_char(step_x: int, step_y: int) -> str:
-        # first point has (0,0) step
         if step_x == 0 and step_y == 0:
             return " "
         if step_y == 0:
@@ -190,8 +281,6 @@ class AsciiBoardRenderer:
         if step_x == 0:
             return "|"
         # diagonal
-        # (x+, y+) or (x-, y-) => '\'
-        # (x+, y-) or (x-, y+) => '/'
         if (step_x > 0 and step_y > 0) or (step_x < 0 and step_y < 0):
             return "\\"
         return "/"
@@ -199,13 +288,12 @@ class AsciiBoardRenderer:
     def _merge_edge_char(self, canvas: List[List[str]], x: int, y: int, ch: str) -> None:
         if ch == " ":
             return
-        if not self._in_bounds(x, y):
+        if not (0 <= x < self.width and 0 <= y < self.height):
             return
 
         cur = canvas[y][x]
 
-        # Don't scribble over node box characters; nodes are drawn later anyway,
-        # but this helps keep borders cleaner during edge pass.
+        # Avoid mutating node borders during edge drawing. Nodes will be drawn after anyway.
         if cur in (".", "'", "|", "-"):
             return
 
@@ -213,17 +301,10 @@ class AsciiBoardRenderer:
             canvas[y][x] = ch
             return
 
-        # Merge crossings / overlaps
         if cur == ch:
             return
+
         canvas[y][x] = "+"
-
-    def _put(self, canvas: List[List[str]], x: int, y: int, ch: str) -> None:
-        if self._in_bounds(x, y):
-            canvas[y][x] = ch
-
-    def _in_bounds(self, x: int, y: int) -> bool:
-        return 0 <= x < self.width and 0 <= y < self.height
 
     @staticmethod
     def _norm_edge(a: int, b: int) -> Tuple[int, int]:
@@ -231,7 +312,7 @@ class AsciiBoardRenderer:
 
 
 # ----------------------------
-# Example layout (tweaked a bit)
+# DO NOT DROP: Your originals
 # ----------------------------
 
 POSITIONS: Dict[int, Tuple[int, int]] = {
@@ -262,3 +343,33 @@ EDGES = [
     (9, 10),
     (10, 11),
 ]
+
+
+# ----------------------------
+# Recommended: scaled layout for more spacing
+# ----------------------------
+
+# Keep POSITIONS untouched; use scaled positions when rendering.
+SCALED_POSITIONS = scale_positions(POSITIONS, sx=2, sy=2, ox=2, oy=1)
+
+
+def make_renderer() -> AsciiBoardRenderer:
+    w, h = compute_canvas_size(SCALED_POSITIONS, node_w=AsciiBoardRenderer.NODE_W, node_h=AsciiBoardRenderer.NODE_H, margin=6)
+    return AsciiBoardRenderer(width=w, height=h, positions=SCALED_POSITIONS, edges=EDGES)
+
+
+# ----------------------------
+# Quick demo
+# ----------------------------
+
+if __name__ == "__main__":
+    renderer = make_renderer()
+
+    # Example game state snapshot (fill from your engine)
+    state: Dict[int, ClearingInfo] = {
+        3: ClearingInfo(suit="fox", warriors={"C": 2, "E": 1}, tiles=["roost"], tokens={"sympathy": ["s1"]}),
+        5: ClearingInfo(suit="mouse", warriors={"C": 1}, tiles=["sawmill", "workshop"], tokens={}),
+        10: ClearingInfo(suit="rabbit", warriors={"M": 3}, tiles=["base"], tokens={"tunnel": ["t1", "t2"]}),
+    }
+
+    print(renderer.render(state))

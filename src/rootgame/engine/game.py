@@ -1,14 +1,15 @@
 from dataclasses import dataclass
 from enum import Enum
-from rootgame.engine.Board import Board
-from rootgame.engine.Deck import Deck
-from rootgame.engine.Player import Player
+from rootgame.engine.board import Board, Token, Building
+from rootgame.engine.deck import Deck
+from rootgame.engine.player import Player, Character
 
 class TurnPhase(Enum):
     BIRDSONG = 1
     DAYLIGHT = 2
     EVENING = 3
 
+@dataclass
 class Game:
     players: list[Player]
     board: Board 
@@ -19,13 +20,56 @@ class Game:
     def __init__(self):
         # Initialize players, board, and game state
         self.players = [Player() for _ in range(2)]  # Assuming 2 players for now
-        self.board = Board()
+        self.players[0].character = Character.MARQUISE_DE_CAT
+        self.players[1].character = Character.EYRIE_DYNASTIES
 
         self.deck = Deck()
+
+        self.board = Board()
+        self.new_game_board_setup()
+
 
         for player in self.players:
             player.score = 0  # Initialize player scores
             player.hand = self.deck.draw_card(5)  # Each player starts with 5 cards
+
+    def new_game_board_setup(self):
+        for p in self.players:
+            if p.character == Character.MARQUISE_DE_CAT:
+                self.marquise_de_cat_setup()
+            elif p.character == Character.EYRIE_DYNASTIES:
+                self.eyrie_dynasties_setup()
+            elif p.character == Character.WOODLAND_ALLIANCE:
+                self.woodland_alliance_setup()
+            elif p.character == Character.VAGABOND:
+                self.vagabond_setup()
+
+    def marquise_de_cat_setup(self):
+        # Place keep in top left clearing (TO CHANGE W/INTERACTIVE SETUP)
+        self.board.clearings[0].add_token(Character.MARQUISE_DE_CAT, Token.KEEP)
+
+        # Place one of each building in clearings adjacent to keep
+        self.board.clearings[4].add_building(Building.WORKSHOP)
+        self.board.clearings[3].add_building(Building.SAWMILL)
+        self.board.clearings[1].add_building(Building.RECRUITER)
+
+        # Place 1 warrior in every clearing (except corner opposite to keep)
+        for (id, clearing) in enumerate(self.board.clearings):
+            if id != 11:
+                clearing.add_warrior(Character.MARQUISE_DE_CAT, 1)
+    
+    def eyrie_dynasties_setup(self):
+        # Place roost in bottom right
+        self.board.clearings[11].add_building(Building.ROOST)
+
+        # Place 6 warriors in starting clearing
+        self.board.clearings[11].add_warrior(Character.EYRIE_DYNASTIES, 6)
+    
+    def woodland_alliance_setup(self):
+        return
+    
+    def vagabond_setup(self):
+        return
 
     def get_legal_actions(self, player: Player):
         legal_actions = ["march", "end phase"]
@@ -61,6 +105,6 @@ class Game:
         return False
     
     def get_clearing_state(self):
-        return {clearing_id: "test" for clearing_id, _ in enumerate(self.board.clearings)}
+        return self.board.export_clearing_info()
     
 

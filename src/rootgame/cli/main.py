@@ -1,10 +1,10 @@
-from rootgame.engine.Game import Game
-from rootgame.cli.map_renderer import AsciiBoardRenderer, EDGES, POSITIONS
+from rootgame.engine.game import Game
+from rootgame.cli.map_renderer import make_renderer
 
 
 def main():
     game = Game()
-    renderer = AsciiBoardRenderer(width=90, height=30, positions=POSITIONS, edges=EDGES)
+    renderer = make_renderer()
 
     for _ in range(5):  # Simulate 5 rounds for demonstration
         for i, player in enumerate(game.players):

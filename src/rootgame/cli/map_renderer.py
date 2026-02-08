@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from typing import Dict, Iterable, List, Tuple, Optional
-from shared.shared_types import ClearingInfo
+from rootgame.shared.shared_types import ClearingInfo
 
 
 # ----------------------------
@@ -319,21 +319,6 @@ POSITIONS: Dict[int, Tuple[int, int]] = {
     11: (74, 25),
 }
 
-EDGES = [
-    (0,1), (0, 4), (0, 3),
-    (1, 2),
-    (2, 3), (2, 7),
-    (3, 5),
-    (4, 5), (4, 8),
-    (5, 8), (5, 10), (5, 6),
-    (6, 7), (6, 11),
-    (7, 11),
-    (8, 9),
-    (9, 10),
-    (10, 11),
-]
-
-
 # ----------------------------
 # Recommended: scaled layout for more spacing
 # ----------------------------
@@ -342,9 +327,9 @@ EDGES = [
 SCALED_POSITIONS = scale_positions(POSITIONS, sx=2, sy=2, ox=2, oy=1)
 
 
-def make_renderer() -> AsciiBoardRenderer:
+def make_renderer(edges: List) -> AsciiBoardRenderer:
     w, h = compute_canvas_size(SCALED_POSITIONS, node_w=AsciiBoardRenderer.NODE_W, node_h=AsciiBoardRenderer.NODE_H, margin=6)
-    return AsciiBoardRenderer(width=w, height=h, positions=SCALED_POSITIONS, edges=EDGES)
+    return AsciiBoardRenderer(width=w, height=h, positions=SCALED_POSITIONS, edges=edges)
 
 
 # ----------------------------

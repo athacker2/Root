@@ -143,4 +143,7 @@ class Game:
     def get_clearing_state(self):
         return self.board.export_clearing_info()
     
+    def get_board_edges(self):
+        return self.board.get_edges()
+    
 

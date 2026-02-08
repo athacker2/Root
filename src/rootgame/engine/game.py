@@ -1,4 +1,3 @@
-from dataclasses import dataclass
 from enum import Enum
 from rootgame.engine.board import Board, Token, Building
 from rootgame.engine.deck import Deck
@@ -9,7 +8,6 @@ class TurnPhase(Enum):
     DAYLIGHT = 2
     EVENING = 3
 
-@dataclass
 class Game:
     players: list[Player]
     board: Board 
@@ -144,5 +142,8 @@ class Game:
     
     def get_clearing_state(self):
         return self.board.export_clearing_info()
+    
+    def get_board_edges(self):
+        return self.board.get_edges()
     
 

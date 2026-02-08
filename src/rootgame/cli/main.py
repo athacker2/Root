@@ -4,7 +4,7 @@ from rootgame.cli.map_renderer import make_renderer
 
 def main():
     game = Game()
-    renderer = make_renderer()
+    renderer = make_renderer(edges=game.get_board_edges())
 
     for _ in range(5):  # Simulate 5 rounds for demonstration
         for i, player in enumerate(game.players):

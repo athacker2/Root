@@ -72,25 +72,54 @@ class Game:
         return
 
     def get_legal_actions(self, player: Player):
-        legal_actions = ["march", "end phase"]
-
-        for card in player.hand:
-            legal_actions.append(f"play card: {card.name}")
-        
+        legal_actions = ["MOVE", "END PHASE", "PLAY CARD"]
         return legal_actions
+    
+    def is_action_legal(self, player: Player, action: str):
+        if(action.startswith("MOVE")):
+            if(len(action.split(" ")) != 4):
+                return False
+            
+            numWarriors = int(action.split(" ")[1])
+            startClearing = int(action.split(" ")[2])
+            endClearing = int(action.split(" ")[3])
+
+            if(startClearing not in self.board.clearings[endClearing].adjacentClearings):
+                return False
+            if(endClearing not in self.board.clearings[startClearing].adjacentClearings):
+                return False
+            if(self.board.clearings[startClearing].warriors[player.character] < numWarriors):
+                return False
+            return True
+            
+        elif action.startswith("PLAY CARD"):
+            card_idx = int(action.split(" ")[2])
+            if card_idx >= len(player.hand):
+                return False
+            return True
+        
+        elif action == "END PHASE":
+            return True
+        
+        return False
+            
 
     def apply_action(self, player: Player, action: str):
         # Check if is legal action
-        if(action not in self.get_legal_actions(player)):
+        if(not self.is_action_legal(player, action)):
             raise ValueError("Illegal Action Received")
 
-        if action == "march":
-            print("marching troops")
-        elif action.startswith("play card"):
-            card = action.split(": ")[1]
-            player.hand = [c for c in player.hand if c.name != card]  # Remove the card from player's hand
-            print(f"Playing card: {card}")
-        elif action == "end phase":
+        if action.startswith("MOVE"):
+            numWarriors = int(action.split(" ")[1])
+            startClearing = int(action.split(" ")[2])
+            endClearing = int(action.split(" ")[3])
+            self.move_warriors(player, numWarriors, startClearing, endClearing)
+
+        elif action.startswith("PLAY CARD"):
+            card_idx = action.split(" ")[2]
+            self.play_card(player, int(card_idx))
+
+        elif action == "END PHASE":
             if(self.current_phase == TurnPhase.BIRDSONG):
                 self.current_phase = TurnPhase.DAYLIGHT
                 return False
@@ -103,6 +132,15 @@ class Game:
                 return True
 
         return False
+    
+    def move_warriors(self, player: Player, numWarriors: int, startClearing: int, endClearing: int):
+        self.board.clearings[startClearing].warriors[player.character] -= numWarriors
+        self.board.clearings[endClearing].warriors[player.character] = self.board.clearings[endClearing].warriors.get(player.character, 0) + numWarriors
+
+    def play_card(self, player: Player, card_idx: int):
+        card = player.hand[card_idx]
+        player.hand.pop(card_idx)  # Remove the card from player's hand
+        print(f"Playing card: {card.name}")
     
     def get_clearing_state(self):
         return self.board.export_clearing_info()

@@ -13,21 +13,20 @@ def main():
                 print(f"Player {i + 1}'s turn. Current phase: {game.current_phase.name}")
                 print(renderer.render(game.get_clearing_state()))
                 
+                print(f"Player {i + 1} hand: {[card.name for card in player.hand]}")
+
                 legal_actions = game.get_legal_actions(player)
-                print(f"Player {i + 1} actions:")
+                print(f"Player {i + 1} actions: - {player.character.name}")
                 for(j, action) in enumerate(legal_actions):
                     print(f"{j}: {action}")
 
-                chosen_action = -1
-                while(chosen_action not in range(len(legal_actions))):
-                    try:
-                        chosen_action = int(input(f"Player {i + 1}, choose an action: "))
-                        if chosen_action not in range(len(legal_actions)):
-                            print("Invalid action. Please choose a legal action.")
-                    except ValueError:
-                        print("Please enter a valid integer for the action.")
+                chosen_action = ""
+                while(not(game.is_action_legal(player, chosen_action))):
+                    chosen_action = input(f"Player {i + 1}, choose an action: ")
+                    if not(game.is_action_legal(player, chosen_action)):
+                        print("Invalid action. Please choose a legal action.")
 
-                turn_over = game.apply_action(player, legal_actions[chosen_action])
+                turn_over = game.apply_action(player, chosen_action)
             
                 print("-" * 50)  # Separator for readability
 

@@ -1,24 +1,34 @@
 from dataclasses import dataclass, field
+from rootgame.shared.shared_types import ClearingInfo
 from rootgame.engine.player import Character
-from enum import Enum
+from enum import StrEnum, auto
 
-class Token(Enum):
-    KEEP = 1
-    WOOD = 2
+class Token(StrEnum):
+    KEEP = auto()
+    WOOD = auto()
 
-class Building(Enum):
-    WORKSHOP = 1
-    SAWMILL = 2
-    RECRUITER = 3
-    ROOST = 4
+class Building(StrEnum):
+    WORKSHOP = auto()
+    SAWMILL = auto()
+    RECRUITER = auto()
+    ROOST = auto()
 
 @dataclass
 class Clearing:
     adjacentClearings: list[int] = field(default_factory=list)
     tiles: list[str] = field(default_factory=list)
-    warriors: dict[Character : int] = field(default_factory=dict)
-    tokens: dict[Character : list[Token]] = field(default_factory=dict)
+    warriors: dict[Character, int] = field(default_factory=dict)
+    tokens: dict[Character, list[Token]] = field(default_factory=dict)
     suit: str = ""
+
+    def add_token(self, character: Character, token: Token):
+        self.tokens.setdefault(character, []).append(token)
+    
+    def add_warrior(self, character: Character, count: int = 1):
+        self.warriors[character] = self.warriors.get(character, 0) + count
+    
+    def add_building(self, building: Building):
+        self.tiles.append(building.name)
 
 class Board:
     clearings: list[Clearing]
@@ -37,4 +47,16 @@ class Board:
         self.clearings[9].adjacentClearings = [8, 10]
         self.clearings[10].adjacentClearings = [9, 5, 11]
         self.clearings[11].adjacentClearings = [6, 7, 10]
+    
+    def export_clearing_info(self):
+        clearing_info: dict[int : ClearingInfo] = {}
+
+        for (id, clearing) in enumerate(self.clearings):
+            clearing_info[id] = ClearingInfo()
+            clearing_info[id].tiles = clearing.tiles
+            clearing_info[id].warriors = {key[0].upper(): value for (key, value) in clearing.warriors.items()}
+            clearing_info[id].tokens = {key[0].upper(): value for (key, value) in clearing.tokens.items()}
+            clearing_info[id].suit = clearing.suit
+
+        return clearing_info
         

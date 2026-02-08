@@ -20,9 +20,14 @@ class Game:
     def __init__(self):
         # Initialize players, board, and game state
         self.players = [Player() for _ in range(2)]  # Assuming 2 players for now
-        self.board = Board()
+        self.players[0].character = Character.MARQUISE_DE_CAT
+        self.players[1].character = Character.EYRIE_DYNASTIES
 
         self.deck = Deck()
+
+        self.board = Board()
+        self.new_game_board_setup()
+
 
         for player in self.players:
             player.score = 0  # Initialize player scores
@@ -41,24 +46,24 @@ class Game:
 
     def marquise_de_cat_setup(self):
         # Place keep in top left clearing (TO CHANGE W/INTERACTIVE SETUP)
-        self.board.clearings[0].tokens[Character.MARQUISE_DE_CAT].append(Token.KEEP)
+        self.board.clearings[0].add_token(Character.MARQUISE_DE_CAT, Token.KEEP)
 
         # Place one of each building in clearings adjacent to keep
-        self.board.clearings[4].tiles.append(Building.WORKSHOP)
-        self.board.clearings[3].tiles.append(Building.SAWMILL)
-        self.board.clearings[1].tiles.append(Building.RECRUITER)
+        self.board.clearings[4].add_building(Building.WORKSHOP)
+        self.board.clearings[3].add_building(Building.SAWMILL)
+        self.board.clearings[1].add_building(Building.RECRUITER)
 
         # Place 1 warrior in every clearing (except corner opposite to keep)
         for (id, clearing) in enumerate(self.board.clearings):
             if id != 11:
-                clearing.warriors[Character.MARQUISE_DE_CAT] = 1
+                clearing.add_warrior(Character.MARQUISE_DE_CAT, 1)
     
-    def eyries_dynasties_setup(self):
+    def eyrie_dynasties_setup(self):
         # Place roost in bottom right
-        self.board.clearings[11].tiles.append(Building.ROOST)
+        self.board.clearings[11].add_building(Building.ROOST)
 
         # Place 6 warriors in starting clearing
-        self.board.clearings[11].warriors[Character.EYRIE_DYNASTIES] = 6
+        self.board.clearings[11].add_warrior(Character.EYRIE_DYNASTIES, 6)
     
     def woodland_alliance_setup(self):
         return
@@ -100,6 +105,6 @@ class Game:
         return False
     
     def get_clearing_state(self):
-        return {clearing_id: "test" for clearing_id, _ in enumerate(self.board.clearings)}
+        return self.board.export_clearing_info()
     
 

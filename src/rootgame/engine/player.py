@@ -1,12 +1,12 @@
 from dataclasses import dataclass, field
-from enum import Enum
+from enum import StrEnum, auto
 
-class Character(Enum):
-    NONE = 0
-    MARQUISE_DE_CAT = 1
-    EYRIE_DYNASTIES = 2
-    WOODLAND_ALLIANCE = 3
-    VAGABOND = 4
+class Character(StrEnum):
+    NONE = auto()
+    MARQUISE_DE_CAT = auto()
+    EYRIE_DYNASTIES = auto()
+    WOODLAND_ALLIANCE = auto()
+    VAGABOND = auto()
 
 
 @dataclass

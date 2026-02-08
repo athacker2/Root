@@ -1,4 +1,4 @@
-from rootgame.engine.Game import Game
+from rootgame.engine.game import Game
 from rootgame.cli.map_renderer import AsciiBoardRenderer, EDGES, POSITIONS
 
 

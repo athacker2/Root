@@ -1,9 +1,23 @@
 from dataclasses import dataclass, field
+from rootgame.engine.player import Character
+from enum import Enum
+
+class Token(Enum):
+    KEEP = 1
+    WOOD = 2
+
+class Building(Enum):
+    WORKSHOP = 1
+    SAWMILL = 2
+    RECRUITER = 3
+    ROOST = 4
 
 @dataclass
 class Clearing:
     adjacentClearings: list[int] = field(default_factory=list)
     tiles: list[str] = field(default_factory=list)
+    warriors: dict[Character : int] = field(default_factory=dict)
+    tokens: dict[Character : list[Token]] = field(default_factory=dict)
     suit: str = ""
 
 class Board:

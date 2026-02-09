@@ -16,7 +16,7 @@ def main():
                 print(f"Player {i + 1} hand: {[card.name for card in player.hand]}")
 
                 legal_actions = game.get_legal_actions(player)
-                print(f"Player {i + 1} actions: - {player.character.name}")
+                print(f"Player {i + 1} actions: - {player.faction.faction_name}")
                 for(j, action) in enumerate(legal_actions):
                     print(f"{j}: {action}")
 

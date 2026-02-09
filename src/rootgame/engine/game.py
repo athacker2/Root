@@ -7,6 +7,8 @@ from rootgame.engine.player import Player
 from rootgame.engine.marquise_de_cat import MarquiseDeCat
 from rootgame.engine.eyrie_dynasties import EyrieDynasties
 
+from rootgame.engine.actions import Action, MoveAction, BattleAction, PlayCardAction, RecruitAction, EndPhaseAction
+
 from rootgame.engine.types import TurnPhase
 
 class Game:
@@ -39,63 +41,80 @@ class Game:
     def get_legal_actions(self, player: Player):
         return player.faction.get_legal_actions(self.current_phase)
     
-    def is_action_legal(self, player: Player, action: str):
-        if(action.startswith("MOVE")):
-            if(len(action.split(" ")) != 4):
-                return False
-            
-            numWarriors = int(action.split(" ")[1])
-            startClearing = int(action.split(" ")[2])
-            endClearing = int(action.split(" ")[3])
+    def is_action_legal(self, player: Player, action: Action):
+        if(isinstance(action, MoveAction)):
+            num_warriors = action.num_warriors
+            source_clearing = action.source_clearing
+            destination_clearing = action.destination_clearing
 
-            if(not self.board.clearings[startClearing].isAdjacent(endClearing)):
+            if(source_clearing >= len(self.board.clearings) or destination_clearing >= len(self.board.clearings)):
                 return False
-            if(not self.board.clearings[endClearing].isAdjacent(startClearing)):
+            if(source_clearing == destination_clearing):
                 return False
-            if(self.board.clearings[startClearing].get_warrior_count(player.faction.faction_name) < numWarriors):
+            if(not self.board.clearings[source_clearing].is_adjacent(destination_clearing)):
                 return False
+            if(not self.board.clearings[destination_clearing].is_adjacent(source_clearing)):
+                return False
+            if(self.board.clearings[source_clearing].get_warrior_count(player.faction.faction_name) < num_warriors):
+                return False
+
+            return True
+        
+        elif isinstance(action, BattleAction):
+            clearing_id = action.clearing_id
+            attacker = action.attacker
+            defender = action.defender
+
+            if(clearing_id >= len(self.board.clearings)):
+                return False
+            if(attacker == defender):
+                return False
+            if(self.board.clearings[clearing_id].get_warrior_count(attacker.faction.faction_name) == 0):
+                return False
+            if(self.board.clearings[clearing_id].get_warrior_count(defender.faction.faction_name) == 0):
+                return False
+            
             return True
             
-        elif action.startswith("PLAY CARD"):
-            card_idx = int(action.split(" ")[2])
-            if card_idx >= len(player.hand):
+        elif isinstance(action, PlayCardAction):
+            card_id = action.card_id
+            if card_id >= len(player.hand):
                 return False
             return True
         
-        elif action.startswith("BATTLE"):
-            if(len(action.split(" ")) != 3):
+        elif isinstance(action, RecruitAction):
+            clearing_id = action.clearing_id
+            if(clearing_id >= len(self.board.clearings)):
                 return False
             return True
         
-        elif action == "END PHASE":
+        elif isinstance(action, EndPhaseAction):
             return True
         
         return False
             
-    def apply_action(self, player: Player, action: str):
+    def apply_action(self, player: Player, action: Action):
         # Check if is legal action
         if(not self.is_action_legal(player, action)):
             raise ValueError("Illegal Action Received")
 
-        if action.startswith("MOVE"):
-            numWarriors = int(action.split(" ")[1])
-            startClearing = int(action.split(" ")[2])
-            endClearing = int(action.split(" ")[3])
-            self.move_warriors(player, numWarriors, startClearing, endClearing)
+        if isinstance(action, MoveAction):
+            num_warriors = action.num_warriors
+            source_clearing = action.source_clearing
+            destination_clearing = action.destination_clearing
+            self.move_warriors(player, num_warriors, source_clearing, destination_clearing)
 
-        elif action.startswith("PLAY CARD"):
-            card_idx = action.split(" ")[2]
-            self.play_card(player, int(card_idx))
+        elif isinstance(action, PlayCardAction):
+            card_id = action.card_id
+            self.play_card(player, card_id)
 
-        elif action.startswith("BATTLE"):
-            clearing_id = int(action.split(" ")[1])
-            
-            player_map = {"M": self.players[0], "E": self.players[1]}
+        elif isinstance(action, BattleAction):
+            clearing_id = action.clearing_id
+            defender = action.defender
+            attacker = action.attacker
+            self.battle(attacker, defender, clearing_id)
 
-            defender = player_map[action.split(" ")[2]]
-            self.battle(player, defender, clearing_id)
-
-        elif action == "END PHASE":
+        elif isinstance(action, EndPhaseAction):
             if(self.current_phase == TurnPhase.BIRDSONG):
                 self.current_phase = TurnPhase.DAYLIGHT
                 return False

@@ -60,7 +60,7 @@ class Clearing:
     def add_building(self, building: Building):
         self.tiles.append(building)
     
-    def isAdjacent(self, other_clearing_id: int):
+    def is_adjacent(self, other_clearing_id: int):
         return other_clearing_id in self.adjacentClearings
 
 class Board:

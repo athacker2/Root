@@ -1,5 +1,6 @@
 from rootgame.engine.game import Game
 from rootgame.cli.map_renderer import make_renderer
+from rootgame.shared.shared_types import *
 
 def main():
     game = Game()
@@ -19,11 +20,26 @@ def main():
                 for(j, action) in enumerate(legal_actions):
                     print(f"{j}: {action}")
 
-                chosen_action = ""
+                chosen_action = None
                 while(not(game.is_action_legal(player, chosen_action))):
                     chosen_action = input(f"Player {i + 1}, choose an action: ")
-                    if not(game.is_action_legal(player, chosen_action)):
-                        print("Invalid action. Please choose a legal action.")
+
+                    # Convert string action to corresponding Action object
+                    if(chosen_action.startswith("MOVE")):
+                        _, num_units, src, dest = chosen_action.split(" ")
+                        chosen_action = MoveAction(int(num_units), int(src), int(dest))
+                    elif(chosen_action.startswith("BATTLE")):
+                        player_map = {"M": game.players[0], "E": game.players[1]}
+                        _, clearing_id, defender = chosen_action.split(" ")
+                        chosen_action = BattleAction(int(clearing_id), player, player_map[defender])
+                    elif(chosen_action.startswith("RECRUIT")):
+                        _, clearing_id, num_units = chosen_action.split(" ")
+                        chosen_action = RecruitAction(int(clearing_id), int(num_units))
+                    elif(chosen_action.startswith("PLAY CARD")):
+                        _, _, card_idx = chosen_action.split(" ")
+                        chosen_action = PlayCardAction(int(card_idx))
+                    elif(chosen_action == "END PHASE"):
+                        chosen_action = EndPhaseAction()
 
                 turn_over = game.apply_action(player, chosen_action)
             

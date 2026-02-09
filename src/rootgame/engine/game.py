@@ -1,5 +1,6 @@
-from enum import Enum
-from rootgame.engine.board import Board, Token, Building
+import random
+
+from rootgame.engine.board import Board
 from rootgame.engine.deck import Deck
 from rootgame.engine.player import Player
 
@@ -61,12 +62,16 @@ class Game:
                 return False
             return True
         
+        elif action.startswith("BATTLE"):
+            if(len(action.split(" ")) != 3):
+                return False
+            return True
+        
         elif action == "END PHASE":
             return True
         
         return False
             
-
     def apply_action(self, player: Player, action: str):
         # Check if is legal action
         if(not self.is_action_legal(player, action)):
@@ -81,6 +86,14 @@ class Game:
         elif action.startswith("PLAY CARD"):
             card_idx = action.split(" ")[2]
             self.play_card(player, int(card_idx))
+
+        elif action.startswith("BATTLE"):
+            clearing_id = int(action.split(" ")[1])
+            
+            player_map = {"M": self.players[0], "E": self.players[1]}
+
+            defender = player_map[action.split(" ")[2]]
+            self.battle(player, defender, clearing_id)
 
         elif action == "END PHASE":
             if(self.current_phase == TurnPhase.BIRDSONG):
@@ -105,6 +118,18 @@ class Game:
         player.hand.pop(card_idx)  # Remove the card from player's hand
         print(f"Playing card: {card.name}")
     
+    def battle(self, attacker: Player, defender: Player, clearing_id: int):
+        battle_clearing = self.board.clearings[clearing_id]
+        rolls = [random.randint(0, 3) for _ in range(2)]
+
+        attack_hits = min(max(rolls), battle_clearing.get_warrior_count(attacker.faction.faction_name))
+        defense_hits = min(min(rolls), battle_clearing.get_warrior_count(defender.faction.faction_name))
+
+        battle_clearing.remove_warriors(attacker.faction.faction_name, defense_hits)
+        battle_clearing.remove_warriors(defender.faction.faction_name, attack_hits)
+
+
+
     def get_clearing_state(self):
         return self.board.export_clearing_info()
     

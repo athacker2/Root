@@ -1,7 +1,6 @@
 from rootgame.engine.game import Game
 from rootgame.cli.map_renderer import make_renderer
 
-
 def main():
     game = Game()
     renderer = make_renderer(edges=game.get_board_edges())

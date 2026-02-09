@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 from rootgame.shared.shared_types import ClearingInfo
-from rootgame.engine.player import Character
+from rootgame.engine.types import FactionName
+
 from enum import StrEnum, auto
 
 AUTUMN_BOARD_EDGES = [
@@ -38,18 +39,29 @@ class Building(StrEnum):
 class Clearing:
     adjacentClearings: list[int] = field(default_factory=list)
     tiles: list[Building] = field(default_factory=list)
-    warriors: dict[Character, int] = field(default_factory=dict)
-    tokens: dict[Character, list[Token]] = field(default_factory=dict)
+    warriors: dict[FactionName, int] = field(default_factory=dict)
+    tokens: dict[FactionName, list[Token]] = field(default_factory=dict)
     suit: str = ""
 
-    def add_token(self, character: Character, token: Token):
-        self.tokens.setdefault(character, []).append(token)
+    def add_token(self, faction: FactionName, token: Token):
+        self.tokens.setdefault(faction, []).append(token)
     
-    def add_warrior(self, character: Character, count: int = 1):
-        self.warriors[character] = self.warriors.get(character, 0) + count
+    def add_warriors(self, faction: FactionName, count: int = 1):
+        self.warriors[faction] = self.warriors.get(faction, 0) + count
+    
+    def get_warrior_count(self, faction: FactionName):
+        return self.warriors.get(faction, 0)
+    
+    def remove_warriors(self, faction: FactionName, count: int = 1):
+        if self.warriors.get(faction, 0) >= count:
+            self.warriors[faction] -= count
+
     
     def add_building(self, building: Building):
         self.tiles.append(building)
+    
+    def isAdjacent(self, other_clearing_id: int):
+        return other_clearing_id in self.adjacentClearings
 
 class Board:
     clearings: list[Clearing]

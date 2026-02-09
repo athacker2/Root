@@ -1,77 +1,42 @@
 from enum import Enum
 from rootgame.engine.board import Board, Token, Building
 from rootgame.engine.deck import Deck
-from rootgame.engine.player import Player, Character
+from rootgame.engine.player import Player
 
-class TurnPhase(Enum):
-    BIRDSONG = 1
-    DAYLIGHT = 2
-    EVENING = 3
+from rootgame.engine.marquise_de_cat import MarquiseDeCat
+from rootgame.engine.eyrie_dynasties import EyrieDynasties
+
+from rootgame.engine.types import TurnPhase
 
 class Game:
     players: list[Player]
-    board: Board 
+    board: Board
     deck: Deck
+
+    # Turn-related data
+    round: int = 0
+    current_player: int = 0
     current_phase: TurnPhase = TurnPhase.BIRDSONG
-    turn: int = 0
 
     def __init__(self):
         # Initialize players, board, and game state
         self.players = [Player() for _ in range(2)]  # Assuming 2 players for now
-        self.players[0].character = Character.MARQUISE_DE_CAT
-        self.players[1].character = Character.EYRIE_DYNASTIES
+        self.players[0].faction = MarquiseDeCat()
+        self.players[1].faction = EyrieDynasties()
 
         self.deck = Deck()
+        for player in self.players:
+            player.hand = self.deck.draw_card(5)  # Each player starts with 5 cards
 
         self.board = Board()
         self.new_game_board_setup()
 
-
-        for player in self.players:
-            player.score = 0  # Initialize player scores
-            player.hand = self.deck.draw_card(5)  # Each player starts with 5 cards
-
     def new_game_board_setup(self):
         for p in self.players:
-            if p.character == Character.MARQUISE_DE_CAT:
-                self.marquise_de_cat_setup()
-            elif p.character == Character.EYRIE_DYNASTIES:
-                self.eyrie_dynasties_setup()
-            elif p.character == Character.WOODLAND_ALLIANCE:
-                self.woodland_alliance_setup()
-            elif p.character == Character.VAGABOND:
-                self.vagabond_setup()
-
-    def marquise_de_cat_setup(self):
-        # Place keep in top left clearing (TO CHANGE W/INTERACTIVE SETUP)
-        self.board.clearings[0].add_token(Character.MARQUISE_DE_CAT, Token.KEEP)
-
-        # Place one of each building in clearings adjacent to keep
-        self.board.clearings[4].add_building(Building.WORKSHOP)
-        self.board.clearings[3].add_building(Building.SAWMILL)
-        self.board.clearings[1].add_building(Building.RECRUITER)
-
-        # Place 1 warrior in every clearing (except corner opposite to keep)
-        for (id, clearing) in enumerate(self.board.clearings):
-            if id != 11:
-                clearing.add_warrior(Character.MARQUISE_DE_CAT, 1)
-    
-    def eyrie_dynasties_setup(self):
-        # Place roost in bottom right
-        self.board.clearings[11].add_building(Building.ROOST)
-
-        # Place 6 warriors in starting clearing
-        self.board.clearings[11].add_warrior(Character.EYRIE_DYNASTIES, 6)
-    
-    def woodland_alliance_setup(self):
-        return
-    
-    def vagabond_setup(self):
-        return
+            p.faction.board_setup(self.board)
 
     def get_legal_actions(self, player: Player):
-        legal_actions = ["MOVE", "END PHASE", "PLAY CARD"]
-        return legal_actions
+        return player.faction.get_legal_actions(self.current_phase)
     
     def is_action_legal(self, player: Player, action: str):
         if(action.startswith("MOVE")):
@@ -82,11 +47,11 @@ class Game:
             startClearing = int(action.split(" ")[2])
             endClearing = int(action.split(" ")[3])
 
-            if(startClearing not in self.board.clearings[endClearing].adjacentClearings):
+            if(not self.board.clearings[startClearing].isAdjacent(endClearing)):
                 return False
-            if(endClearing not in self.board.clearings[startClearing].adjacentClearings):
+            if(not self.board.clearings[endClearing].isAdjacent(startClearing)):
                 return False
-            if(self.board.clearings[startClearing].warriors[player.character] < numWarriors):
+            if(self.board.clearings[startClearing].get_warrior_count(player.faction.faction_name) < numWarriors):
                 return False
             return True
             
@@ -126,14 +91,14 @@ class Game:
                 return False
             elif self.current_phase == TurnPhase.EVENING:
                 self.current_phase = TurnPhase.BIRDSONG
-                self.turn += 1
+                self.round += 1
                 return True
 
         return False
     
     def move_warriors(self, player: Player, numWarriors: int, startClearing: int, endClearing: int):
-        self.board.clearings[startClearing].warriors[player.character] -= numWarriors
-        self.board.clearings[endClearing].warriors[player.character] = self.board.clearings[endClearing].warriors.get(player.character, 0) + numWarriors
+        self.board.clearings[startClearing].remove_warriors(player.faction.faction_name, numWarriors)
+        self.board.clearings[endClearing].add_warriors(player.faction.faction_name, numWarriors)
 
     def play_card(self, player: Player, card_idx: int):
         card = player.hand[card_idx]
@@ -145,5 +110,3 @@ class Game:
     
     def get_board_edges(self):
         return self.board.get_edges()
-    
-

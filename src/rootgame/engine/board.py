@@ -54,7 +54,7 @@ class Clearing:
     
     def remove_warriors(self, faction: FactionName, count: int = 1):
         if self.warriors.get(faction, 0) >= count:
-            self.warriors[faction] -= count
+            self.warriors[faction] = max(0, self.warriors[faction] - count)
 
     
     def add_building(self, building: Building):

@@ -113,6 +113,11 @@ class Game:
             defender = action.defender
             attacker = action.attacker
             self.battle(attacker, defender, clearing_id)
+        
+        elif isinstance(action, RecruitAction):
+            clearing_id = action.clearing_id
+            num_units = action.num_units
+            self.recruit(player, clearing_id, num_units)
 
         elif isinstance(action, EndPhaseAction):
             if(self.current_phase == TurnPhase.BIRDSONG):
@@ -147,7 +152,8 @@ class Game:
         battle_clearing.remove_warriors(attacker.faction.faction_name, defense_hits)
         battle_clearing.remove_warriors(defender.faction.faction_name, attack_hits)
 
-
+    def recruit(self, player: Player, clearing_id: int, num_units: int):
+        self.board.clearings[clearing_id].add_warriors(player.faction.faction_name, num_units)
 
     def get_clearing_state(self):
         return self.board.export_clearing_info()

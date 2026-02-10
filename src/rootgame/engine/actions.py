@@ -34,3 +34,8 @@ class EndPhaseAction(Action):
 @dataclass
 class AddWoodToSawmillsAction(Action):
     pass
+
+@dataclass
+class MarchAction(Action):
+    move_one: MoveAction
+    move_two: MoveAction

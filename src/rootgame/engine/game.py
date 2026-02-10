@@ -98,6 +98,63 @@ class Game:
                 return False
             
             return True
+
+        elif(isinstance(action, MarchAction)):
+            print("checking legality of march")
+            if not isinstance(player.faction, MarquiseDeCat):
+                return False
+            if self.current_phase != TurnPhase.DAYLIGHT:
+                return False
+            
+            # Validate first move
+            num_warriors_one = action.move_one.num_warriors
+            source_clearing_one = action.move_one.source_clearing
+            destination_clearing_one = action.move_one.destination_clearing
+
+            if(source_clearing_one >= len(self.board.clearings) or destination_clearing_one >= len(self.board.clearings)):
+                return False
+            if(source_clearing_one == destination_clearing_one):
+                return False
+            if(not self.board.clearings[source_clearing_one].is_adjacent(destination_clearing_one)):
+                return False
+            if(not self.board.clearings[destination_clearing_one].is_adjacent(source_clearing_one)):
+                return False
+            if(self.board.clearings[source_clearing_one].get_warrior_count(player.faction.faction_name) < num_warriors_one):
+                return False
+            
+            print("first move legal")
+
+            # Validate second move, given first move
+            num_warriors_two = action.move_two.num_warriors
+            source_clearing_two = action.move_two.source_clearing
+            destination_clearing_two = action.move_two.destination_clearing
+
+            if(source_clearing_two >= len(self.board.clearings) or destination_clearing_two >= len(self.board.clearings)):
+                return False
+            if(source_clearing_two == destination_clearing_two):
+                return False
+            if(not self.board.clearings[source_clearing_two].is_adjacent(destination_clearing_two)):
+                return False
+            if(not self.board.clearings[destination_clearing_two].is_adjacent(source_clearing_two)):
+                return False
+            
+
+
+            # Moving from same clearing --> second move has LESS warriors available
+            if(source_clearing_one == source_clearing_two):
+                if(self.board.clearings[source_clearing_two].get_warrior_count(player.faction.faction_name) - num_warriors_one < num_warriors_two):
+                    return False
+            # Moving from first destination --> second move has MORE warriors available
+            elif(destination_clearing_one == source_clearing_two):
+                if(self.board.clearings[source_clearing_two].get_warrior_count(player.faction.faction_name) + num_warriors_one < num_warriors_two):
+                    return False
+            else:
+                if(self.board.clearings[source_clearing_two].get_warrior_count(player.faction.faction_name) < num_warriors_two):
+                    return False
+            
+            print("second move legal")
+            
+            return True
         
         return False
             
@@ -137,6 +194,11 @@ class Game:
         elif isinstance(action, AddWoodToSawmillsAction):
             if(isinstance(player.faction, MarquiseDeCat)):
                 player.faction.add_wood_to_sawmills(self.board)
+        
+        elif isinstance(action, MarchAction):
+            if(isinstance(player.faction, MarquiseDeCat)):
+                player.faction.march(self.board, action.move_one.num_warriors, action.move_one.source_clearing, action.move_one.destination_clearing,
+                                     action.move_two.num_warriors, action.move_two.source_clearing, action.move_two.destination_clearing)
 
         return False
 

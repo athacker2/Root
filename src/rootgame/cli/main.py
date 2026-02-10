@@ -43,6 +43,11 @@ def main():
                         chosen_action = EndPhaseAction()
                     elif(chosen_action == "ADD WOOD TO SAWMILLS"):
                         chosen_action = AddWoodToSawmillsAction()
+                    elif(chosen_action.startswith("MARCH")):
+                        _, num_units_one, src_one, dest_one, num_units_two, src_two, dest_two = chosen_action.split(" ")
+                        move_one = MoveAction(int(num_units_one), int(src_one), int(dest_one))
+                        move_two = MoveAction(int(num_units_two), int(src_two), int(dest_two))
+                        chosen_action = MarchAction(move_one, move_two)
 
                 turn_over = game.apply_action(player, chosen_action)
             

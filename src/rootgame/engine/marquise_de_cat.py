@@ -41,3 +41,8 @@ class MarquiseDeCat(Faction):
             for building in clearing.buildings:
                 if building is Building.SAWMILL:
                     clearing.add_token(self.faction_name, Token.WOOD)
+    
+    def march(self, board: Board, num_warriors_one: int, start_clearing_one: int, end_clearing_one: int,
+              num_warriors_two: int, start_clearing_two: int, end_clearing_two: int):
+        board.move_warriors(self.faction_name, num_warriors_one, start_clearing_one, end_clearing_one)
+        board.move_warriors(self.faction_name, num_warriors_two, start_clearing_two, end_clearing_two)

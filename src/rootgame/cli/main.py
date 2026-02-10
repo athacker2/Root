@@ -34,8 +34,11 @@ def main():
                         _, clearing_id, defender = chosen_action.split(" ")
                         chosen_action = BattleAction(int(clearing_id), player, player_map[defender])
                     elif(chosen_action.startswith("RECRUIT")):
-                        _, clearing_id, num_units = chosen_action.split(" ")
-                        chosen_action = RecruitAction(int(clearing_id), int(num_units))
+                        if(player.faction.faction_name == "marquise_de_cat"):
+                            chosen_action = MarquiseRecruitAction()
+                        else:
+                            _, clearing_id, num_units = chosen_action.split(" ")
+                            chosen_action = RecruitAction(int(clearing_id), int(num_units))
                     elif(chosen_action.startswith("PLAY CARD")):
                         _, _, card_idx = chosen_action.split(" ")
                         chosen_action = PlayCardAction(int(card_idx))

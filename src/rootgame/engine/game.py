@@ -155,6 +155,13 @@ class Game:
             print("second move legal")
             
             return True
+
+        elif(isinstance(action, MarquiseRecruitAction)):
+            if(self.current_phase != TurnPhase.DAYLIGHT):
+                return False
+            if(not isinstance(player.faction, MarquiseDeCat)):
+                return False
+            return True
         
         return False
             
@@ -199,6 +206,9 @@ class Game:
             if(isinstance(player.faction, MarquiseDeCat)):
                 player.faction.march(self.board, action.move_one.num_warriors, action.move_one.source_clearing, action.move_one.destination_clearing,
                                      action.move_two.num_warriors, action.move_two.source_clearing, action.move_two.destination_clearing)
+        elif(isinstance(action, MarquiseRecruitAction)):
+            if(isinstance(player.faction, MarquiseDeCat)):
+                player.faction.recruit(self.board)
 
         return False
 

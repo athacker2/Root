@@ -39,3 +39,6 @@ class AddWoodToSawmillsAction(Action):
 class MarchAction(Action):
     move_one: MoveAction
     move_two: MoveAction
+
+class MarquiseRecruitAction(Action):
+    pass

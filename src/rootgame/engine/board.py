@@ -42,12 +42,14 @@ class Clearing:
     warriors: dict[FactionName, int] = field(default_factory=dict)
     tokens: dict[FactionName, list[Token]] = field(default_factory=dict)
     suit: str = ""
+    ruler: FactionName | None = None
 
     def add_token(self, faction: FactionName, token: Token):
         self.tokens.setdefault(faction, []).append(token)
     
     def add_warriors(self, faction: FactionName, count: int = 1):
         self.warriors[faction] = self.warriors.get(faction, 0) + count
+        self.update_ruler()
     
     def get_warrior_count(self, faction: FactionName):
         return self.warriors.get(faction, 0)
@@ -55,12 +57,32 @@ class Clearing:
     def remove_warriors(self, faction: FactionName, count: int = 1):
         if self.warriors.get(faction, 0) >= count:
             self.warriors[faction] = max(0, self.warriors[faction] - count)
+        self.update_ruler()
 
     def add_building(self, building: Building):
         self.buildings.append(building)
+        self.update_ruler()
     
     def is_adjacent(self, other_clearing_id: int):
         return other_clearing_id in self.adjacentClearings
+    
+    def update_ruler(self):
+        if not self.warriors and not self.buildings:
+            self.ruler = None
+        else:
+            # Determine the faction with the most warriors and buildings
+            faction_counts: dict[FactionName, int] = {}
+            for faction, count in self.warriors.items():
+                faction_counts[faction] = faction_counts.get(faction, 0) + count
+            for building in self.buildings:
+                if building in [Building.WORKSHOP, Building.SAWMILL, Building.RECRUITER]:
+                    faction_counts[FactionName.MARQUISE_DE_CAT] = faction_counts.get(FactionName.MARQUISE_DE_CAT, 0) + 1
+                elif building in [Building.ROOST]:
+                    faction_counts[FactionName.EYRIE_DYNASTY] = faction_counts.get(FactionName.EYRIE_DYNASTY, 0) + 1
+
+            # Determine the new ruler based on the highest count
+            if faction_counts:
+                self.ruler = max(faction_counts, key=faction_counts.get)
 
 class Board:
     clearings: list[Clearing]

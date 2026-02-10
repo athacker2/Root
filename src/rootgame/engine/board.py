@@ -90,3 +90,6 @@ class Board:
     def get_edges(self):
         return AUTUMN_BOARD_EDGES
         
+    def move_warriors(self, faction: FactionName, numWarriors: int, startClearing: int, endClearing: int):
+        self.clearings[startClearing].remove_warriors(faction, numWarriors)
+        self.clearings[endClearing].add_warriors(faction, numWarriors)

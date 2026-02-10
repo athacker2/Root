@@ -110,7 +110,7 @@ class Game:
             num_warriors = action.num_warriors
             source_clearing = action.source_clearing
             destination_clearing = action.destination_clearing
-            self.move_warriors(player, num_warriors, source_clearing, destination_clearing)
+            self.board.move_warriors(player.faction.faction_name, num_warriors, source_clearing, destination_clearing)
 
         elif isinstance(action, PlayCardAction):
             card_id = action.card_id
@@ -139,10 +139,6 @@ class Game:
                 player.faction.add_wood_to_sawmills(self.board)
 
         return False
-    
-    def move_warriors(self, player: Player, numWarriors: int, startClearing: int, endClearing: int):
-        self.board.clearings[startClearing].remove_warriors(player.faction.faction_name, numWarriors)
-        self.board.clearings[endClearing].add_warriors(player.faction.faction_name, numWarriors)
 
     def play_card(self, player: Player, card_idx: int):
         card = player.hand[card_idx]

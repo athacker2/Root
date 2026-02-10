@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from typing import Protocol
-from rootgame.engine.types import FactionName
+from rootgame.engine.player import Player
 
 class Action(Protocol):
     pass
@@ -14,8 +14,8 @@ class MoveAction(Action):
 @dataclass
 class BattleAction(Action):
     clearing_id: int
-    attacker: FactionName
-    defender: FactionName
+    attacker: Player
+    defender: Player
     
 @dataclass
 class PlayCardAction(Action):

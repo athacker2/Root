@@ -77,7 +77,7 @@ class Board:
             clearing.suit = AUTUMN_BOARD_SUITS[id]
     
     def export_clearing_info(self):
-        clearing_info: dict[int : ClearingInfo] = {}
+        clearing_info: dict[int, ClearingInfo] = {}
 
         for (id, clearing) in enumerate(self.clearings):
             clearing_info[id] = ClearingInfo()

@@ -1,6 +1,7 @@
 from rootgame.engine.game import Game
 from rootgame.cli.map_renderer import make_renderer
 from rootgame.shared.shared_types import *
+from rootgame.engine.actions import *
 
 def main():
     game = Game()

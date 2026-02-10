@@ -51,6 +51,10 @@ def main():
                         move_one = MoveAction(int(num_units_one), int(src_one), int(dest_one))
                         move_two = MoveAction(int(num_units_two), int(src_two), int(dest_two))
                         chosen_action = MarchAction(move_one, move_two)
+                    elif(chosen_action.startswith("BUILD")):
+                        _, clearing_id, building_name = chosen_action.split(" ")
+                        building_map = {"SAWMILL": Building.SAWMILL, "WORKSHOP": Building.WORKSHOP, "RECRUITER": Building.RECRUITER}
+                        chosen_action = MarquiseBuildAction(int(clearing_id), building_map[building_name])
 
                 turn_over = game.apply_action(player, chosen_action)
             

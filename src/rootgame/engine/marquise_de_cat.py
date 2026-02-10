@@ -1,7 +1,9 @@
 from dataclasses import dataclass
 from typing import ClassVar
 from rootgame.engine.faction import Faction
-from rootgame.engine.board import Board, Token, Building
+from rootgame.engine.player import Player
+from rootgame.engine.board import Board, Token, Building, Clearing
+from rootgame.engine.actions import Action, AddWoodToSawmillsAction, MarchAction, MarquiseRecruitAction, MarquiseBuildAction
 
 from rootgame.engine.types import FactionName, TurnPhase
 
@@ -32,9 +34,9 @@ class MarquiseDeCat(Faction):
         board.clearings[0].add_token(FactionName.MARQUISE_DE_CAT, Token.KEEP)
 
         # Place one of each building in clearings adjacent to keep
-        board.clearings[4].add_building(Building.WORKSHOP)
-        board.clearings[3].add_building(Building.SAWMILL)
-        board.clearings[1].add_building(Building.RECRUITER)
+        self.build(board, 4, Building.WORKSHOP)
+        self.build(board, 3, Building.SAWMILL)
+        self.build(board, 1, Building.RECRUITER)
 
         # Place 1 warrior in every clearing (except corner opposite to keep)
         for (id, clearing) in enumerate(board.clearings):
@@ -55,12 +57,125 @@ class MarquiseDeCat(Faction):
         
         return legal_actions
     
+    def is_action_legal(self, action: Action, current_phase: TurnPhase, player: Player, board: Board):
+        if isinstance(action, AddWoodToSawmillsAction):
+            if current_phase != TurnPhase.BIRDSONG:
+                return False
+            
+            return True
+
+        elif(isinstance(action, MarchAction)):
+            if current_phase != TurnPhase.DAYLIGHT:
+                return False
+            
+            # Validate first move
+            num_warriors_one = action.move_one.num_warriors
+            source_clearing_one = action.move_one.source_clearing
+            destination_clearing_one = action.move_one.destination_clearing
+
+            if(source_clearing_one >= len(self.board.clearings) or destination_clearing_one >= len(self.board.clearings)):
+                return False
+            if(source_clearing_one == destination_clearing_one):
+                return False
+            if(not self.board.clearings[source_clearing_one].is_adjacent(destination_clearing_one)):
+                return False
+            if(not self.board.clearings[destination_clearing_one].is_adjacent(source_clearing_one)):
+                return False
+            if(self.board.clearings[source_clearing_one].get_warrior_count(player.faction.faction_name) < num_warriors_one):
+                return False
+
+            # Validate second move, given first move
+            num_warriors_two = action.move_two.num_warriors
+            source_clearing_two = action.move_two.source_clearing
+            destination_clearing_two = action.move_two.destination_clearing
+
+            if(source_clearing_two >= len(self.board.clearings) or destination_clearing_two >= len(self.board.clearings)):
+                return False
+            if(source_clearing_two == destination_clearing_two):
+                return False
+            if(not self.board.clearings[source_clearing_two].is_adjacent(destination_clearing_two)):
+                return False
+            if(not self.board.clearings[destination_clearing_two].is_adjacent(source_clearing_two)):
+                return False
+
+            # Moving from same clearing --> second move has LESS warriors available
+            if(source_clearing_one == source_clearing_two):
+                if(self.board.clearings[source_clearing_two].get_warrior_count(player.faction.faction_name) - num_warriors_one < num_warriors_two):
+                    return False
+            # Moving from first destination --> second move has MORE warriors available
+            elif(destination_clearing_one == source_clearing_two):
+                if(self.board.clearings[source_clearing_two].get_warrior_count(player.faction.faction_name) + num_warriors_one < num_warriors_two):
+                    return False
+            else:
+                if(self.board.clearings[source_clearing_two].get_warrior_count(player.faction.faction_name) < num_warriors_two):
+                    return False
+            
+            return True
+
+        elif(isinstance(action, MarquiseRecruitAction)):
+            if(current_phase != TurnPhase.DAYLIGHT):
+                return False
+            return True
+        
+        elif(isinstance(action, MarquiseBuildAction)):
+            print("checking legality of building ", action.building, " in clearing ", action.clearing_id)
+            if(current_phase != TurnPhase.DAYLIGHT):
+                return False
+
+            wood_needed = 0
+            if(action.building is Building.WORKSHOP):
+                if(self.workshops_placed >= self.workshop_limit):
+                    return False
+                else:
+                    wood_needed = self.building_cost[self.workshops_placed]
+            elif(action.building is Building.SAWMILL):
+                if(self.sawmills_placed >= self.sawmill_limit):
+                    return False
+                else:
+                    wood_needed = self.building_cost[self.sawmills_placed]
+            elif(action.building is Building.RECRUITER):
+                if(self.recruiters_placed >= self.recruiter_limit):
+                    return False
+                else:
+                    wood_needed = self.building_cost[self.recruiters_placed]
+
+            print("wood needed: ", wood_needed)
+            connected_clearings_with_wood = self.find_wood_in_connected_ruled_clearings(board, action.clearing_id)
+            wood_available = 0
+            for clearing in connected_clearings_with_wood:
+                wood_available += clearing.tokens.get(FactionName.MARQUISE_DE_CAT, []).count(Token.WOOD)
+            
+            print("wood available: ", wood_available)
+            if(wood_available < wood_needed):
+                return False
+            return True
+        
+        return False
+    
     def add_wood_to_sawmills(self, board: Board):
         for clearing in board.clearings:
             for building in clearing.buildings:
                 if building is Building.SAWMILL:
                     clearing.add_token(self.faction_name, Token.WOOD)
     
+    def find_wood_in_connected_ruled_clearings(self, board: Board, clearing_id: int) -> list[Clearing]:
+        search_q = [board.clearings[clearing_id]]
+        searched_clearings = set([clearing_id])
+        clearings_with_wood = []
+        while(len(search_q)):
+            curr = search_q.pop()
+            if(Token.WOOD in curr.tokens.get(FactionName.MARQUISE_DE_CAT, [])):
+                clearings_with_wood.append(curr)
+            
+            # Check adj clearings that you rule
+            for id in curr.adjacentClearings:
+                adj_clearing = board.clearings[id]
+                if(adj_clearing.ruler == FactionName.MARQUISE_DE_CAT and id not in searched_clearings):
+                    search_q.append(adj_clearing)
+                    searched_clearings.add(id)
+        
+        return clearings_with_wood 
+        
     def march(self, board: Board, num_warriors_one: int, start_clearing_one: int, end_clearing_one: int,
               num_warriors_two: int, start_clearing_two: int, end_clearing_two: int):
         board.move_warriors(self.faction_name, num_warriors_one, start_clearing_one, end_clearing_one)
@@ -75,9 +190,34 @@ class MarquiseDeCat(Faction):
                         self.warrior_supply -= 1
     
     def build(self, board: Board, clearing_id: int, building: Building):
+        print("building ", building, " in clearing ", clearing_id)
+
+        wood_needed = 0
         if(building is Building.SAWMILL):
-            pass
+            wood_needed = self.building_cost[self.sawmills_placed]
         elif(building is Building.WORKSHOP):
-            pass
+            wood_needed = self.building_cost[self.workshops_placed]
         elif(building is Building.RECRUITER):
-            pass
+            wood_needed = self.building_cost[self.recruiters_placed]
+
+        print("wood needed: ", wood_needed)
+        
+        connected_clearings_with_wood = self.find_wood_in_connected_ruled_clearings(board, clearing_id)
+
+        # Remove wood from connected clearings
+        for clearing in connected_clearings_with_wood:
+            while wood_needed > 0 and Token.WOOD in clearing.tokens.get(FactionName.MARQUISE_DE_CAT, []):
+                clearing.tokens[FactionName.MARQUISE_DE_CAT].remove(Token.WOOD)
+                wood_needed -= 1
+        
+        # Add building to target clearing
+        board.clearings[clearing_id].add_building(building)
+        print("built ", building, " in clearing ", clearing_id)
+
+        if(building is Building.SAWMILL):
+            self.sawmills_placed += 1
+        elif(building is Building.WORKSHOP):
+            self.workshops_placed += 1
+        elif(building is Building.RECRUITER):
+            self.recruiters_placed += 1
+

@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from typing import Protocol
 from rootgame.engine.player import Player
+from rootgame.engine.board import Building
 
 class Action(Protocol):
     pass
@@ -40,5 +41,11 @@ class MarchAction(Action):
     move_one: MoveAction
     move_two: MoveAction
 
+@dataclass
 class MarquiseRecruitAction(Action):
     pass
+
+@dataclass
+class MarquiseBuildAction(Action):
+    clearing_id : int
+    building: Building

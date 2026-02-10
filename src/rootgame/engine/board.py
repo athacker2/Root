@@ -78,7 +78,7 @@ class Clearing:
                 if building in [Building.WORKSHOP, Building.SAWMILL, Building.RECRUITER]:
                     faction_counts[FactionName.MARQUISE_DE_CAT] = faction_counts.get(FactionName.MARQUISE_DE_CAT, 0) + 1
                 elif building in [Building.ROOST]:
-                    faction_counts[FactionName.EYRIE_DYNASTY] = faction_counts.get(FactionName.EYRIE_DYNASTY, 0) + 1
+                    faction_counts[FactionName.EYRIE_DYNASTIES] = faction_counts.get(FactionName.EYRIE_DYNASTIES, 0) + 1
 
             # Determine the new ruler based on the highest count
             if faction_counts:

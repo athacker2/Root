@@ -7,7 +7,7 @@ from rootgame.engine.player import Player
 from rootgame.engine.marquise_de_cat import MarquiseDeCat
 from rootgame.engine.eyrie_dynasties import EyrieDynasties
 
-from rootgame.engine.actions import Action, MoveAction, BattleAction, PlayCardAction, RecruitAction, EndPhaseAction
+from rootgame.engine.actions import *
 
 from rootgame.engine.types import TurnPhase
 
@@ -91,6 +91,14 @@ class Game:
         elif isinstance(action, EndPhaseAction):
             return True
         
+        elif isinstance(action, AddWoodToSawmillsAction):
+            if not isinstance(player.faction, MarquiseDeCat):
+                return False
+            if self.current_phase != TurnPhase.BIRDSONG:
+                return False
+            
+            return True
+        
         return False
             
     def apply_action(self, player: Player, action: Action):
@@ -125,6 +133,10 @@ class Game:
                 self.current_phase = TurnPhase.BIRDSONG
                 self.round += 1
                 return True
+        
+        elif isinstance(action, AddWoodToSawmillsAction):
+            if(isinstance(player.faction, MarquiseDeCat)):
+                player.faction.add_wood_to_sawmills(self.board)
 
         return False
     

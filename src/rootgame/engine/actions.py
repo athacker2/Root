@@ -29,3 +29,8 @@ class RecruitAction(Action):
 @dataclass
 class EndPhaseAction(Action):
     pass
+
+# Marquise De Cat Actions
+@dataclass
+class AddWoodToSawmillsAction(Action):
+    pass

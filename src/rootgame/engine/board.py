@@ -38,7 +38,7 @@ class Building(StrEnum):
 @dataclass
 class Clearing:
     adjacentClearings: list[int] = field(default_factory=list)
-    tiles: list[Building] = field(default_factory=list)
+    buildings: list[Building] = field(default_factory=list)
     warriors: dict[FactionName, int] = field(default_factory=dict)
     tokens: dict[FactionName, list[Token]] = field(default_factory=dict)
     suit: str = ""
@@ -56,9 +56,8 @@ class Clearing:
         if self.warriors.get(faction, 0) >= count:
             self.warriors[faction] = max(0, self.warriors[faction] - count)
 
-    
     def add_building(self, building: Building):
-        self.tiles.append(building)
+        self.buildings.append(building)
     
     def is_adjacent(self, other_clearing_id: int):
         return other_clearing_id in self.adjacentClearings
@@ -81,7 +80,7 @@ class Board:
 
         for (id, clearing) in enumerate(self.clearings):
             clearing_info[id] = ClearingInfo()
-            clearing_info[id].tiles = clearing.tiles
+            clearing_info[id].tiles = clearing.buildings
             clearing_info[id].warriors = {key[0].upper(): value for (key, value) in clearing.warriors.items()}
             clearing_info[id].tokens = {key[0].upper(): value for (key, value) in clearing.tokens.items()}
             clearing_info[id].suit = clearing.suit

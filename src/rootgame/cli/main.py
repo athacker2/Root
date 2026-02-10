@@ -41,6 +41,8 @@ def main():
                         chosen_action = PlayCardAction(int(card_idx))
                     elif(chosen_action == "END PHASE"):
                         chosen_action = EndPhaseAction()
+                    elif(chosen_action == "ADD WOOD TO SAWMILLS"):
+                        chosen_action = AddWoodToSawmillsAction()
 
                 turn_over = game.apply_action(player, chosen_action)
             

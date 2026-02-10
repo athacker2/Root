@@ -1,4 +1,3 @@
-from enum import StrEnum, auto
 from typing import Protocol
 from rootgame.engine.board import Board
 

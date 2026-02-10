@@ -1,4 +1,5 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass
+from typing import ClassVar
 from rootgame.engine.faction import Faction
 from rootgame.engine.board import Board, Token, Building
 
@@ -6,7 +7,25 @@ from rootgame.engine.types import FactionName, TurnPhase
 
 @dataclass
 class MarquiseDeCat(Faction):
-    faction_name = FactionName.MARQUISE_DE_CAT
+    faction_name: ClassVar[FactionName] = FactionName.MARQUISE_DE_CAT
+
+    warrior_limit: ClassVar[int] = 25 # Starting number of warriors for Marquise de Cat
+    warriors_placed: int = 0
+
+    sawmill_limit: ClassVar[int] = 6
+    sawmills_placed: int = 0
+
+    workshop_limit: ClassVar[int] = 6
+    workshops_placed: int = 0
+
+    recruiter_limit: ClassVar[int] = 6
+    recruiters_placed: int = 0
+
+    building_cost: ClassVar[list[int]] = [0, 1, 2, 3, 3, 4]
+
+    sawmill_VP: ClassVar[list[int]] = [0, 1, 2, 3, 4, 5]
+    workshop_VP: ClassVar[list[int]] = [0, 2, 2, 3, 4, 5]
+    recruiter_VP: ClassVar[list[int]] = [0, 1, 2, 3, 3, 4]
 
     def board_setup(self, board: Board):
         # Place keep in top left clearing (TO CHANGE W/INTERACTIVE SETUP)
@@ -51,4 +70,14 @@ class MarquiseDeCat(Faction):
         for clearing in board.clearings:
             for building in clearing.buildings:
                 if building is Building.RECRUITER:
-                    clearing.add_warriors(self.faction_name, 1)
+                    if(self.warrior_supply):
+                        clearing.add_warriors(self.faction_name, 1)
+                        self.warrior_supply -= 1
+    
+    def build(self, board: Board, clearing_id: int, building: Building):
+        if(building is Building.SAWMILL):
+            pass
+        elif(building is Building.WORKSHOP):
+            pass
+        elif(building is Building.RECRUITER):
+            pass

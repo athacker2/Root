@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from typing import Protocol
+from rootgame.engine.types import DecreeOption
 from rootgame.engine.player import Player
 from rootgame.engine.building import BuildingType
 
@@ -62,3 +63,33 @@ class MarquiseBuildAction(Action):
 class MarquiseOverworkAction(Action):
     clearing_id: int
     card_idx: int
+
+# Eyrie Dynasties Actions
+@dataclass
+class EyrieAddToDecreeAction(Action):
+    card_id: int
+    decree_option: DecreeOption
+
+@dataclass
+class EyrieRecruitAction(Action):
+    clearing_id: int
+
+@dataclass
+class EyrieMoveAction(Action):
+    num_warriors: int
+    source_clearing: int
+    destination_clearing: int
+    
+@dataclass 
+class EyrieBattleAction(Action):
+    clearing_id: int
+    attacker: Player
+    defender: Player
+
+@dataclass 
+class EyrieBuildAction(Action):
+    clearing_id : int
+
+@dataclass
+class EyrieTurmoilAction(Action):
+    pass

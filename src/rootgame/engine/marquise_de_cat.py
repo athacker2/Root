@@ -39,13 +39,19 @@ class MarquiseDeCat(Faction):
 
         # Place one of each building in clearings adjacent to keep
         self.build(board, 4, BuildingType.WORKSHOP)
+        self.workshops_placed += 1
+
         self.build(board, 3, BuildingType.SAWMILL)
+        self.sawmills_placed += 1
+
         self.build(board, 1, BuildingType.RECRUITER)
+        self.recruiters_placed += 1
 
         # Place 1 warrior in every clearing (except corner opposite to keep)
         for (id, clearing) in enumerate(board.clearings):
             if id != 11:
                 clearing.add_warriors(FactionName.MARQUISE_DE_CAT, 1)
+                self.warriors_placed += 1
 
     def get_legal_actions(self, turn_phase: TurnPhase, board: Board):
         # Implement logic to return legal actions for Marquise de Cat based on the turn phase
@@ -65,13 +71,16 @@ class MarquiseDeCat(Faction):
         if(current_phase == TurnPhase.BIRDSONG):
             if(isinstance(action, AddWoodToSawmillsAction)):
                 if(self.sawmills_placed == 0):
+                    print("No sawmills placed")
                     return False
                 if sum(isinstance(a, AddWoodToSawmillsAction) for a in actions_taken) == 1:
+                    print("Already added wood")
                     return False
                 return True
             
             elif(isinstance(action, EndPhaseAction)):
                 if sum(isinstance(a, AddWoodToSawmillsAction) for a in actions_taken) == 0:
+                    print("Need to add wood before ending")
                     return False
                 return True
             
@@ -80,6 +89,7 @@ class MarquiseDeCat(Faction):
         elif(current_phase == TurnPhase.DAYLIGHT):
             # Check for max of 3 actions during daylight
             if(len(actions_taken) >= 3 and not isinstance(action, EndPhaseAction)):
+                print("Can't take more than 3 actions")
                 return False
             
             if(isinstance(action, BattleAction)):
@@ -109,10 +119,13 @@ class MarquiseDeCat(Faction):
             
             elif(isinstance(action, MarquiseRecruitAction)):
                 if(sum(isinstance(a, MarquiseRecruitAction) for a in actions_taken) == 1):
+                    print("Can only recruit once per turn")
                     return False
                 if(self.warriors_placed >= self.warrior_limit):
+                    print("Out of warriors")
                     return False
                 if(self.recruiters_placed == 0):
+                    print("No recruiters placed")
                     return False
                 return True
 
@@ -120,19 +133,22 @@ class MarquiseDeCat(Faction):
                 wood_needed = 0
                 if(action.building_type == BuildingType.SAWMILL):
                     if(self.sawmills_placed >= self.sawmill_limit):
+                        print("Out of sawmills")
                         return False
                     else:
-                        wood_needed = self.building_cost[self.sawmills_placed]
+                        wood_needed = self.building_cost[self.sawmills_placed - 1]
                 elif(action.building_type == BuildingType.WORKSHOP):
                     if(self.workshops_placed >= self.workshop_limit):
+                        print("Out of workshops")
                         return False
                     else:
-                        wood_needed = self.building_cost[self.workshops_placed]
+                        wood_needed = self.building_cost[self.workshops_placed - 1]
                 elif(action.building_type == BuildingType.RECRUITER):
                     if(self.recruiters_placed >= self.recruiter_limit):
+                        print("Out of recruiters")
                         return False
                     else:
-                        wood_needed = self.building_cost[self.recruiters_placed]
+                        wood_needed = self.building_cost[self.recruiters_placed - 1]
                 else:
                     return False
                 
@@ -142,17 +158,22 @@ class MarquiseDeCat(Faction):
                     wood_available += clearing.tokens.get(FactionName.MARQUISE_DE_CAT, []).count(Token.WOOD)
                 
                 if(wood_available < wood_needed):
+                    print("Insufficient wood")
                     return False
                 return True
                 
             elif(isinstance(action, MarquiseOverworkAction)):
                 if(action.card_idx >= len(player.hand) or action.card_idx < 0):
+                    print("Invalid card index")
                     return False
                 if(board.is_valid_clearing(action.clearing_id) == False):
+                    print("Invalid clearing")
                     return False
                 if(player.hand[action.card_idx].suit != board.clearings[action.clearing_id].suit):
+                    print("Invalid card. Suit doesn't match")
                     return False
                 if(len(board.get_buildings(BuildingType.SAWMILL)) == 0):
+                    print("No sawmill at clearing")
                     return False
                 return True
             
@@ -185,7 +206,7 @@ class MarquiseDeCat(Faction):
             
             return False
         
-    def apply_action(self, action: Action, board: Board):
+    def apply_action(self, action: Action, board: Board, player: Player):
         if isinstance(action, MoveAction):
             num_warriors = action.num_warriors
             source_clearing = action.source_clearing
@@ -283,3 +304,6 @@ class MarquiseDeCat(Faction):
         # Add wood to sawmill at clearing
         board.clearings[clearing_id].add_token(self.faction_name, Token.WOOD)
 
+
+    def reset_state(self):
+        pass

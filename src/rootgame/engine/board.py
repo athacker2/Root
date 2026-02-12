@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from random import random
+import random
 from rootgame.shared.shared_types import ClearingInfo
 from rootgame.engine.types import FactionName
 from rootgame.engine.building import Building, BuildingType
@@ -59,6 +59,9 @@ class Clearing:
         self.buildings.append(building)
         self.update_ruler()
     
+    def has_building(self, building_type: BuildingType):
+        return any(building.type == building_type for building in self.buildings)
+    
     def is_adjacent(self, other_clearing_id: int):
         return other_clearing_id in self.adjacentClearings
     
@@ -107,12 +110,19 @@ class Board:
     
     def can_move(self, faction: FactionName, numWarriors: int, source_clearing: int, dest_clearing: int):
         if(not self.is_valid_clearing(source_clearing) or not self.is_valid_clearing(dest_clearing)):
+            print("Not a valid source clearing")
             return False
         if(numWarriors <= 0):
+            print("Can't move 0 or negative warriors")
             return False
         if(not self.clearings[source_clearing].is_adjacent(dest_clearing)):
+            print("Can't move between non-adj clearings")
             return False
         if(self.clearings[source_clearing].get_warrior_count(faction) < numWarriors):
+            print("Insufficient warriors at clearing")
+            return False
+        if(not self.clearings[source_clearing].ruler == faction and not self.clearings[dest_clearing].ruler == faction):
+            print("Don't rule either clearing involved in move")
             return False
         
         return True
@@ -153,12 +163,15 @@ class Board:
     
     def can_battle(self, attacker: FactionName, defender: FactionName, clearing_id: int):
         if(not self.is_valid_clearing(clearing_id)):
+            print("Not a valid clearing")
             return False
         if(attacker == defender):
+            print("Can't battle yourself")
             return False
         
         clearing = self.clearings[clearing_id]
         if(clearing.get_warrior_count(attacker) <= 0 or clearing.get_warrior_count(defender) <= 0):
+            print("Either attacker or defender has no warriors")
             return False
 
         return True

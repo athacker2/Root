@@ -19,3 +19,15 @@ class Suit(StrEnum):
     Fox = auto()
     Rabbit = auto()
     Mouse = auto()
+
+class DecreeOption(StrEnum):
+    Recruit = auto()
+    Move = auto()
+    Battle = auto()
+    Build = auto()
+
+class EyrieLeader(StrEnum):
+    DESPOT = auto()
+    COMMANDER = auto()
+    CHARISMATIC = auto()
+    BUILDER = auto()

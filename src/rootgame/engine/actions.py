@@ -85,3 +85,7 @@ class EyrieBattleAction(Action):
     clearing_id: int
     attacker: Player
     defender: Player
+
+@dataclass 
+class EyrieBuildAction(Action):
+    clearing_id : int

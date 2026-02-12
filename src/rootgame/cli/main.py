@@ -93,6 +93,11 @@ def main():
                             if(not defender in player_map.keys()):
                                 continue
                             chosen_action = EyrieBattleAction(int(clearing_id), player, player_map[defender])
+                        elif(chosen_action.startswith("BUILD")):
+                            _, clearing_id = chosen_action.split(" ")
+                            if(not clearing_id.isdigit()):
+                                continue
+                            chosen_action = EyrieBuildAction(int(clearing_id))
 
                 game.apply_action(player, chosen_action)
             

@@ -1,5 +1,5 @@
 from typing import Protocol
-from build.lib.rootgame.engine.actions import Action
+from rootgame.engine.actions import Action
 from rootgame.engine.board import Board
 
 from rootgame.engine.player import Player

@@ -147,6 +147,10 @@ class Game:
         elif(isinstance(action, MarquiseBuildAction)):
             if(isinstance(player.faction, MarquiseDeCat)):
                 player.faction.build(self.board, action.clearing_id, action.building_type)
+        
+        elif(isinstance(action, MarquiseOverworkAction)):
+            if(isinstance(player.faction, MarquiseDeCat)):
+                player.faction.overwork(self.board, action.clearing_id, player, action.card_idx)
 
         return False
 

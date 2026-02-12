@@ -58,6 +58,11 @@ def main():
 
                         building_map = {"SAWMILL": BuildingType.SAWMILL, "WORKSHOP": BuildingType.WORKSHOP, "RECRUITER": BuildingType.RECRUITER}
                         chosen_action = MarquiseBuildAction(int(clearing_id), building_map[building_name])
+                    elif(chosen_action.startswith("OVERWORK")):
+                        _, clearing_id, card_idx = chosen_action.split(" ")
+                        if(not (clearing_id.isdigit() and card_idx.isdigit())):
+                            continue
+                        chosen_action = MarquiseOverworkAction(int(clearing_id), int(card_idx))
 
                 turn_over = game.apply_action(player, chosen_action)
             

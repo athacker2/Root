@@ -3,10 +3,10 @@ from typing import ClassVar
 from rootgame.engine.faction import Faction
 from rootgame.engine.player import Player
 from rootgame.engine.board import Board, Token, Clearing
-from rootgame.engine.building import BuildingType
-from rootgame.engine.actions import Action, AddWoodToSawmillsAction, MarchAction, MarquiseRecruitAction, MarquiseBuildAction
+from rootgame.engine.building import Building, BuildingType
+from rootgame.engine.actions import Action, AddWoodToSawmillsAction, MarchAction, MarquiseRecruitAction, MarquiseBuildAction, MarquiseOverworkAction
 
-from rootgame.engine.types import FactionName, TurnPhase
+from rootgame.engine.types import FactionName, TurnPhase, Suit
 
 @dataclass
 class MarquiseDeCat(Faction):
@@ -48,11 +48,10 @@ class MarquiseDeCat(Faction):
         # Implement logic to return legal actions for Marquise de Cat based on the turn phase
         legal_actions = ["END PHASE"]
         if turn_phase == TurnPhase.BIRDSONG:
-            if len(board.get_unused_buildings(BuildingType.SAWMILL)) > 0:
-                legal_actions.extend(["ADD WOOD"])
+            legal_actions.extend(["ADD WOOD"])
 
         elif turn_phase == TurnPhase.DAYLIGHT:
-            legal_actions.extend(["PLAY CARD #", "BATTLE X", "MOVE # # #", "RECRUIT #"])
+            legal_actions.extend(["PLAY CARD #", "BATTLE X", "MOVE # # #", "RECRUIT #", "OVERWORK # #"])
 
         elif turn_phase == TurnPhase.EVENING:
             legal_actions.extend(["DRAW CARD #"])
@@ -155,6 +154,17 @@ class MarquiseDeCat(Faction):
                 return False
             return True
         
+        elif(isinstance(action, MarquiseOverworkAction)):
+            if(action.card_idx >= len(player.hand)):
+                return False
+            if(action.clearing_id >= len(board.clearings)):
+                return False
+            if(player.hand[action.card_idx].suit != board.clearings[action.clearing_id].suit):
+                return False
+            if(board.clearings[action.clearing_id].buildings.count(Building(BuildingType.SAWMILL, True)) == 0):
+                return False
+            return True
+        
         return False
     
     def add_wood_to_sawmills(self, board: Board):
@@ -226,4 +236,12 @@ class MarquiseDeCat(Faction):
             self.workshops_placed += 1
         elif(building_type is BuildingType.RECRUITER):
             self.recruiters_placed += 1
+    
+    def overwork(self, board: Board, clearing_id: int, player: Player, card_idx: int):
+        # Use card
+        card = player.hand[card_idx]
+        player.hand.pop(card_idx)  # Remove the card from player's hand
+
+        # Add wood to sawmill at clearing
+        board.clearings[clearing_id].add_token(self.faction_name, Token.WOOD)
 

@@ -49,3 +49,8 @@ class MarquiseRecruitAction(Action):
 class MarquiseBuildAction(Action):
     clearing_id : int
     building_type: BuildingType
+
+@dataclass 
+class MarquiseOverworkAction(Action):
+    clearing_id: int
+    card_idx: int

@@ -54,10 +54,10 @@ class MarquiseDeCat(Faction):
             legal_actions.extend(["ADD WOOD"])
 
         elif turn_phase == TurnPhase.DAYLIGHT:
-            legal_actions.extend(["PLAY CARD #", "BATTLE X", "MOVE # # #", "RECRUIT #", "OVERWORK # #"])
+            legal_actions.extend(["BATTLE", "MARCH", "RECRUIT", "BUILD", "OVERWORK # #"])
 
         elif turn_phase == TurnPhase.EVENING:
-            legal_actions.extend(["DRAW CARD #"])
+            legal_actions.extend(["DRAW CARD", "DISCARD CARD"])
         
         return legal_actions
     

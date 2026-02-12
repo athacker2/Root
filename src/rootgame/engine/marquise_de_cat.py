@@ -39,13 +39,19 @@ class MarquiseDeCat(Faction):
 
         # Place one of each building in clearings adjacent to keep
         self.build(board, 4, BuildingType.WORKSHOP)
+        self.workshops_placed += 1
+
         self.build(board, 3, BuildingType.SAWMILL)
+        self.sawmills_placed += 1
+
         self.build(board, 1, BuildingType.RECRUITER)
+        self.recruiters_placed += 1
 
         # Place 1 warrior in every clearing (except corner opposite to keep)
         for (id, clearing) in enumerate(board.clearings):
             if id != 11:
                 clearing.add_warriors(FactionName.MARQUISE_DE_CAT, 1)
+                self.warriors_placed += 1
 
     def get_legal_actions(self, turn_phase: TurnPhase, board: Board):
         # Implement logic to return legal actions for Marquise de Cat based on the turn phase

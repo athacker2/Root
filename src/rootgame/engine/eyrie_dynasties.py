@@ -1,5 +1,7 @@
 from dataclasses import dataclass, field
 from enum import StrEnum, auto
+from typing import ClassVar
+
 from rootgame.engine.actions import Action, DiscardCardAction, DrawCardAction, EndPhaseAction, EyrieAddToDecreeAction, EyrieBattleAction, EyrieMoveAction, EyrieRecruitAction, EyrieBuildAction
 from rootgame.engine.deck import Card
 from rootgame.engine.faction import Faction
@@ -24,12 +26,21 @@ class EyrieDynasties(Faction):
     decree: dict[DecreeOption, list[Card]] = field(default_factory=dict)
     decree_actions_taken: dict[DecreeOption, list[Card]] = field(default_factory=dict)
 
+    warrior_limit: ClassVar[int] = 20
+    warriors_placed: int = 0
+
+    roost_limit: ClassVar[int] = 7
+    roosts_placed: int = 0
+
+
     def board_setup(self, board: Board):
         # Place roost in bottom right
         board.build(11, BuildingType.ROOST)
+        self.roosts_placed += 1
 
         # Place 6 warriors in starting clearing
         board.clearings[11].add_warriors(FactionName.EYRIE_DYNASTIES, 6)
+        self.warriors_placed += 6
     
     def get_legal_actions(self, turn_phase: TurnPhase, board: Board):
          # Implement logic to return legal actions for Eyrie Dynasties based on the turn phase
@@ -75,6 +86,8 @@ class EyrieDynasties(Faction):
                         return False
                     if(not board.clearings[action.clearing_id].has_building(BuildingType.ROOST)):
                         return False
+                    if(self.warriors_placed == self.warrior_limit):
+                        return False
                     return True
                 return False
             
@@ -103,6 +116,8 @@ class EyrieDynasties(Faction):
                     if(not board.clearings[action.clearing_id].ruler == self.faction_name):
                         return False
                     if(board.clearings[action.clearing_id].has_building(BuildingType.ROOST)):
+                        return False
+                    if(self.roosts_placed == self.roost_limit):
                         return False
                     return True
                 return False
@@ -141,7 +156,7 @@ class EyrieDynasties(Faction):
                 card = player.hand[action.card_id]
                 self.add_to_decree(card, action.decree_option)
                 player.hand.pop(action.card_id)
-                
+
             elif(isinstance(action, EyrieRecruitAction)):
                 self.recruit(action.clearing_id, board)
                 self.take_decree_action(board.clearings[action.clearing_id].suit, DecreeOption.Recruit)

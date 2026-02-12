@@ -47,59 +47,7 @@ class Game:
         return player.faction.get_legal_actions(self.current_phase, self.board)
     
     def is_action_legal(self, player: Player, action: Action):
-        if(isinstance(action, MoveAction)):
-            num_warriors = action.num_warriors
-            source_clearing = action.source_clearing
-            destination_clearing = action.destination_clearing
-
-            if(source_clearing >= len(self.board.clearings) or destination_clearing >= len(self.board.clearings)):
-                return False
-            if(source_clearing == destination_clearing):
-                return False
-            if(not self.board.clearings[source_clearing].is_adjacent(destination_clearing)):
-                return False
-            if(not self.board.clearings[destination_clearing].is_adjacent(source_clearing)):
-                return False
-            if(self.board.clearings[source_clearing].get_warrior_count(player.faction.faction_name) < num_warriors):
-                return False
-
-            return True
-        
-        elif isinstance(action, BattleAction):
-            clearing_id = action.clearing_id
-            attacker = action.attacker
-            defender = action.defender
-
-            if(clearing_id >= len(self.board.clearings)):
-                return False
-            if(attacker == defender):
-                return False
-            if(self.board.clearings[clearing_id].get_warrior_count(attacker.faction.faction_name) == 0):
-                return False
-            if(self.board.clearings[clearing_id].get_warrior_count(defender.faction.faction_name) == 0):
-                return False
-            
-            return True
-            
-        elif isinstance(action, PlayCardAction):
-            card_id = action.card_id
-            if card_id >= len(player.hand):
-                return False
-            return True
-        
-        elif isinstance(action, RecruitAction):
-            clearing_id = action.clearing_id
-            if(clearing_id >= len(self.board.clearings)):
-                return False
-            return True
-        
-        elif isinstance(action, EndPhaseAction):
-            return True
-        
-        elif(isinstance(player.faction, MarquiseDeCat)):
-            return player.faction.is_action_legal(action, self.current_phase, player, self.board, self.game_log.get_actions_for_turn_phase(self.round, self.current_phase))
-        
-        return False
+        return player.faction.is_action_legal(action, self.current_phase, player, self.board, self.game_log.get_actions_for_turn_phase(self.round, self.current_phase))
             
     def apply_action(self, player: Player, action: Action):
         # Check if is legal action

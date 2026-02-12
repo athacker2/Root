@@ -114,6 +114,14 @@ class Board:
         elif(building_type == BuildingType.ROOST):
             self.clearings[clearing_id].add_building(Building(type=building_type, owner=FactionName.EYRIE_DYNASTIES))
     
+    def get_building(self, building_type: BuildingType):
+        buildings = []
+        for clearing in self.clearings:
+            for building in clearing.buildings:
+                if building.type == building_type:
+                    buildings.append(building)
+        return buildings
+    
     def get_unused_buildings(self, building_type: BuildingType):
         buildings = []
         for clearing in self.clearings:
@@ -126,3 +134,30 @@ class Board:
         for clearing in self.clearings:
             for building in clearing.buildings:
                 building.used = False
+    
+    def is_valid_clearing(self, clearing_id: int):
+        return clearing_id >= 0 and clearing_id < len(self.clearings)
+    
+    def can_battle(self, attacker: FactionName, defender: FactionName, clearing_id: int):
+        if(not self.is_valid_clearing(clearing_id)):
+            return False
+        if(attacker == defender):
+            return False
+        
+        clearing = self.clearings[clearing_id]
+        if(clearing.get_warrior_count(attacker) <= 0 or clearing.get_warrior_count(defender) <= 0):
+            return False
+
+        return True
+    
+    def can_move(self, faction: FactionName, numWarriors: int, source_clearing: int, dest_clearing: int):
+        if(not self.is_valid_clearing(source_clearing) or not self.is_valid_clearing(dest_clearing)):
+            return False
+        if(numWarriors <= 0):
+            return False
+        if(not self.clearings[source_clearing].is_adjacent(dest_clearing)):
+            return False
+        if(self.clearings[source_clearing].get_warrior_count(faction) < numWarriors):
+            return False
+        
+        return True

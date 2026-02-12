@@ -1,5 +1,7 @@
 from enum import Enum, StrEnum, auto
 
+MAX_HAND_SIZE = 5
+
 class FactionName(StrEnum):
     NONE = auto()
     MARQUISE_DE_CAT = auto()

@@ -5,9 +5,9 @@ from rootgame.engine.faction import Faction
 from rootgame.engine.player import Player
 from rootgame.engine.board import Board, Token, Clearing
 from rootgame.engine.building import Building, BuildingType
-from rootgame.engine.actions import Action, AddWoodToSawmillsAction, EndPhaseAction, MarchAction, MarquiseRecruitAction, MarquiseBuildAction, MarquiseOverworkAction
+from rootgame.engine.actions import Action, AddWoodToSawmillsAction, EndPhaseAction, MarchAction, MarquiseRecruitAction, MarquiseBuildAction, MarquiseOverworkAction, BattleAction, DrawCardAction, DiscardCardAction
 
-from rootgame.engine.types import FactionName, TurnPhase, Suit
+from rootgame.engine.types import FactionName, TurnPhase, MAX_HAND_SIZE
 
 @dataclass
 class MarquiseDeCat(Faction):
@@ -24,6 +24,8 @@ class MarquiseDeCat(Faction):
 
     recruiter_limit: ClassVar[int] = 6
     recruiters_placed: int = 0
+
+    extra_cards_to_draw: int = 0
 
     building_cost: ClassVar[list[int]] = [0, 1, 2, 3, 3, 4]
 
@@ -60,117 +62,128 @@ class MarquiseDeCat(Faction):
         return legal_actions
     
     def is_action_legal(self, action: Action, current_phase: TurnPhase, player: Player, board: Board, actions_taken: list[Action]):
-
-        if(len([a for a in actions_taken if not isinstance(a, MarquiseOverworkAction)]) == 3 and current_phase == TurnPhase.DAYLIGHT and not isinstance(action, EndPhaseAction)):
+        if(current_phase == TurnPhase.BIRDSONG):
+            if(isinstance(action, AddWoodToSawmillsAction)):
+                if(self.sawmills_placed == 0):
+                    return False
+                if sum(isinstance(a, AddWoodToSawmillsAction) for a in actions_taken) == 1:
+                    return False
+                return True
+            
+            elif(isinstance(action, EndPhaseAction)):
+                if sum(isinstance(a, AddWoodToSawmillsAction) for a in actions_taken) == 0:
+                    return False
+                return True
+            
             return False
         
-        if isinstance(action, AddWoodToSawmillsAction):
-            if sum(isinstance(a, AddWoodToSawmillsAction) for a in actions_taken) == 1:
+        elif(current_phase == TurnPhase.DAYLIGHT):
+            # Check for max of 3 actions during daylight
+            if(len(actions_taken) >= 3 and not isinstance(action, EndPhaseAction)):
                 return False
             
-            if current_phase != TurnPhase.BIRDSONG:
-                return False
+            if(isinstance(action, BattleAction)):
+                return board.can_battle(action.attacker.faction.faction_name, action.defender.faction.faction_name, action.clearing_id)
             
-            return True
+            elif(isinstance(action, MarchAction)):
+                # Validate first move
+                num_warriors_one = action.move_one.num_warriors
+                source_clearing_one = action.move_one.source_clearing
+                destination_clearing_one = action.move_one.destination_clearing
 
-        elif(isinstance(action, MarchAction)):
-            if current_phase != TurnPhase.DAYLIGHT:
-                return False
+                if(not board.can_move(self.faction_name, num_warriors_one, source_clearing_one, destination_clearing_one)):
+                    return False
+
+                # Validate second move, given first move
+                num_warriors_two = action.move_two.num_warriors
+                source_clearing_two = action.move_two.source_clearing
+                destination_clearing_two = action.move_two.destination_clearing
+
+                board.move_warriors(self.faction_name, num_warriors_one, source_clearing_one, destination_clearing_one) # Temporarily move warriors to validate second move
+                if(not board.can_move(self.faction_name, num_warriors_two, source_clearing_two, destination_clearing_two)):
+                    board.move_warriors(self.faction_name, num_warriors_one, destination_clearing_one, source_clearing_one) # Move warriors back to original clearing
+                    return False
+                board.move_warriors(self.faction_name, num_warriors_one, destination_clearing_one, source_clearing_one) # Move warriors back to original clearing
+
+                return True
             
-            # Validate first move
-            num_warriors_one = action.move_one.num_warriors
-            source_clearing_one = action.move_one.source_clearing
-            destination_clearing_one = action.move_one.destination_clearing
-
-            if(source_clearing_one >= len(board.clearings) or destination_clearing_one >= len(board.clearings)):
-                return False
-            if(source_clearing_one == destination_clearing_one):
-                return False
-            if(not board.clearings[source_clearing_one].is_adjacent(destination_clearing_one)):
-                return False
-            if(not board.clearings[destination_clearing_one].is_adjacent(source_clearing_one)):
-                return False
-            if(board.clearings[source_clearing_one].get_warrior_count(player.faction.faction_name) < num_warriors_one):
-                return False
-
-            # Validate second move, given first move
-            num_warriors_two = action.move_two.num_warriors
-            source_clearing_two = action.move_two.source_clearing
-            destination_clearing_two = action.move_two.destination_clearing
-
-            if(source_clearing_two >= len(board.clearings) or destination_clearing_two >= len(board.clearings)):
-                return False
-            if(source_clearing_two == destination_clearing_two):
-                return False
-            if(not board.clearings[source_clearing_two].is_adjacent(destination_clearing_two)):
-                return False
-            if(not board.clearings[destination_clearing_two].is_adjacent(source_clearing_two)):
-                return False
-
-            # Moving from same clearing --> second move has LESS warriors available
-            if(source_clearing_one == source_clearing_two):
-                if(board.clearings[source_clearing_two].get_warrior_count(player.faction.faction_name) - num_warriors_one < num_warriors_two):
+            elif(isinstance(action, MarquiseRecruitAction)):
+                if(sum(isinstance(a, MarquiseRecruitAction) for a in actions_taken) == 1):
                     return False
-            # Moving from first destination --> second move has MORE warriors available
-            elif(destination_clearing_one == source_clearing_two):
-                if(board.clearings[source_clearing_two].get_warrior_count(player.faction.faction_name) + num_warriors_one < num_warriors_two):
+                if(self.warriors_placed >= self.warrior_limit):
                     return False
-            else:
-                if(board.clearings[source_clearing_two].get_warrior_count(player.faction.faction_name) < num_warriors_two):
+                if(self.recruiters_placed == 0):
                     return False
-            
-            return True
+                return True
 
-        elif(isinstance(action, MarquiseRecruitAction)):
-            if(current_phase != TurnPhase.DAYLIGHT):
-                return False
-            return True
-        
-        elif(isinstance(action, MarquiseBuildAction)):
-            if(current_phase != TurnPhase.DAYLIGHT):
-                return False
-
-            wood_needed = 0
-            if(action.building_type is BuildingType.WORKSHOP):
-                if(self.workshops_placed >= self.workshop_limit):
-                    return False
+            elif(isinstance(action, MarquiseBuildAction)):
+                wood_needed = 0
+                if(action.building_type == BuildingType.SAWMILL):
+                    if(self.sawmills_placed >= self.sawmill_limit):
+                        return False
+                    else:
+                        wood_needed = self.building_cost[self.sawmills_placed]
+                elif(action.building_type == BuildingType.WORKSHOP):
+                    if(self.workshops_placed >= self.workshop_limit):
+                        return False
+                    else:
+                        wood_needed = self.building_cost[self.workshops_placed]
+                elif(action.building_type == BuildingType.RECRUITER):
+                    if(self.recruiters_placed >= self.recruiter_limit):
+                        return False
+                    else:
+                        wood_needed = self.building_cost[self.recruiters_placed]
                 else:
-                    wood_needed = self.building_cost[self.workshops_placed]
-            elif(action.building_type is BuildingType.SAWMILL):
-                if(self.sawmills_placed >= self.sawmill_limit):
                     return False
-                else:
-                    wood_needed = self.building_cost[self.sawmills_placed]
-            elif(action.building_type is BuildingType.RECRUITER):
-                if(self.recruiters_placed >= self.recruiter_limit):
+                
+                connected_clearings_with_wood = self.find_wood_in_connected_ruled_clearings(board, action.clearing_id)
+                wood_available = 0
+                for clearing in connected_clearings_with_wood:
+                    wood_available += clearing.tokens.get(FactionName.MARQUISE_DE_CAT, []).count(Token.WOOD)
+                
+                if(wood_available < wood_needed):
                     return False
-                else:
-                    wood_needed = self.building_cost[self.recruiters_placed]
-
-            connected_clearings_with_wood = self.find_wood_in_connected_ruled_clearings(board, action.clearing_id)
-            wood_available = 0
-            for clearing in connected_clearings_with_wood:
-                wood_available += clearing.tokens.get(FactionName.MARQUISE_DE_CAT, []).count(Token.WOOD)
+                return True
+                
+            elif(isinstance(action, MarquiseOverworkAction)):
+                if(action.card_idx >= len(player.hand) or action.card_idx < 0):
+                    return False
+                if(board.is_valid_clearing(action.clearing_id) == False):
+                    return False
+                if(player.hand[action.card_idx].suit != board.clearings[action.clearing_id].suit):
+                    return False
+                if(len(board.get_buildings(BuildingType.SAWMILL)) == 0):
+                    return False
+                return True
             
-            if(wood_available < wood_needed):
-                return False
-            return True
-        
-        elif(isinstance(action, MarquiseOverworkAction)):
-            if(action.card_idx >= len(player.hand)):
-                print("bad card idx", action.card_idx, len(player.hand))
-                return False
-            if(action.clearing_id >= len(board.clearings)):
-                return False
-            if(player.hand[action.card_idx].suit != board.clearings[action.clearing_id].suit):
-                print("wrong suit", player.hand[action.card_idx].suit, board.clearings[action.clearing_id].suit)
-                return False
-            if(len([building for building in board.clearings[action.clearing_id].buildings if building.type == BuildingType.SAWMILL]) == 0):
-                print("no sawmills")
-                return False
-            return True
-        
-        return False
+            elif(isinstance(action, EndPhaseAction)):
+                return True
+            
+            return False
+
+        elif(current_phase == TurnPhase.EVENING):
+            if(isinstance(action, DrawCardAction)):
+                if sum(isinstance(a, DrawCardAction) for a in actions_taken) == 1:
+                    return False
+                return True
+            
+            elif(isinstance(action, DiscardCardAction)):
+                if(len(player.hand) < MAX_HAND_SIZE):
+                    return False
+                if(len(player.hand) - len(action.card_ids) != MAX_HAND_SIZE):
+                    return False
+                if(any(card_id >= len(player.hand) or card_id < 0 for card_id in action.card_ids)):
+                    return False
+                return True
+            
+            elif(isinstance(action, EndPhaseAction)):
+                if(sum(isinstance(a, DrawCardAction) for a in actions_taken) == 0):
+                    return False
+                if(len(player.hand) > MAX_HAND_SIZE):
+                    return False
+                return True
+            
+            return False
     
     def add_wood_to_sawmills(self, board: Board):
         for clearing in board.clearings:

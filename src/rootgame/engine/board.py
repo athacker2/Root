@@ -70,10 +70,7 @@ class Clearing:
             for faction, count in self.warriors.items():
                 faction_counts[faction] = faction_counts.get(faction, 0) + count
             for building in self.buildings:
-                if building.type == BuildingType.SAWMILL or building.type == BuildingType.RECRUITER or building.type == BuildingType.WORKSHOP:
-                    faction_counts[FactionName.MARQUISE_DE_CAT] = faction_counts.get(FactionName.MARQUISE_DE_CAT, 0) + 1
-                elif building.type == BuildingType.ROOST:
-                    faction_counts[FactionName.EYRIE_DYNASTIES] = faction_counts.get(FactionName.EYRIE_DYNASTIES, 0) + 1
+                faction_counts[building.owner] = faction_counts.get(building.owner, 0) + 1
 
             # Determine the new ruler based on the highest count
             if faction_counts:
@@ -112,7 +109,10 @@ class Board:
         self.clearings[endClearing].add_warriors(faction, numWarriors)
     
     def build(self, clearing_id: int, building_type: BuildingType):
-        self.clearings[clearing_id].add_building(Building(type=building_type))
+        if(building_type == BuildingType.SAWMILL or building_type == BuildingType.RECRUITER or building_type == BuildingType.WORKSHOP):
+            self.clearings[clearing_id].add_building(Building(type=building_type, owner=FactionName.MARQUISE_DE_CAT))
+        elif(building_type == BuildingType.ROOST):
+            self.clearings[clearing_id].add_building(Building(type=building_type, owner=FactionName.EYRIE_DYNASTIES))
     
     def get_unused_buildings(self, building_type: BuildingType):
         buildings = []

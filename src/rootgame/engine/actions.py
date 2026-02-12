@@ -89,3 +89,7 @@ class EyrieBattleAction(Action):
 @dataclass 
 class EyrieBuildAction(Action):
     clearing_id : int
+
+@dataclass
+class EyrieTurmoilAction(Action):
+    pass

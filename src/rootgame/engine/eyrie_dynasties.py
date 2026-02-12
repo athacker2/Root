@@ -1,27 +1,30 @@
 from dataclasses import dataclass, field
 from enum import StrEnum, auto
 from typing import ClassVar
+import random
 
-from rootgame.engine.actions import Action, DiscardCardAction, DrawCardAction, EndPhaseAction, EyrieAddToDecreeAction, EyrieBattleAction, EyrieMoveAction, EyrieRecruitAction, EyrieBuildAction
+from rootgame.engine.actions import Action, DiscardCardAction, DrawCardAction, EndPhaseAction, EyrieAddToDecreeAction, EyrieBattleAction, EyrieMoveAction, EyrieRecruitAction, EyrieBuildAction, EyrieTurmoilAction
 from rootgame.engine.deck import Card
 from rootgame.engine.faction import Faction
 from rootgame.engine.board import Board
 from rootgame.engine.building import BuildingType
 from rootgame.engine.player import Player
 
-from rootgame.engine.types import MAX_HAND_SIZE, FactionName, Suit, TurnPhase, DecreeOption
+from rootgame.engine.types import MAX_HAND_SIZE, FactionName, Suit, TurnPhase, DecreeOption, EyrieLeader
 
-class Leader(StrEnum):
-    DESPOT = auto()
-    COMMANDER = auto()
-    CHARISMATIC = auto()
-    BUILDER = auto()
+LEADER_VIZIERS = {
+    EyrieLeader.DESPOT: [DecreeOption.Move, DecreeOption.Build],
+    EyrieLeader.COMMANDER: [DecreeOption.Move, DecreeOption.Battle],
+    EyrieLeader.CHARISMATIC: [DecreeOption.Recruit, DecreeOption.Battle],
+    EyrieLeader.BUILDER: [DecreeOption.Recruit, DecreeOption.Move]
+}
 
 @dataclass
 class EyrieDynasties(Faction):
     faction_name = FactionName.EYRIE_DYNASTIES
 
-    leader: Leader | None = None
+    leader: EyrieLeader | None = None
+    used_leaders: list[EyrieLeader] = field(default_factory=list)
 
     decree: dict[DecreeOption, list[Card]] = field(default_factory=dict)
     decree_actions_taken: dict[DecreeOption, list[Card]] = field(default_factory=dict)
@@ -41,6 +44,9 @@ class EyrieDynasties(Faction):
         # Place 6 warriors in starting clearing
         board.clearings[11].add_warriors(FactionName.EYRIE_DYNASTIES, 6)
         self.warriors_placed += 6
+
+        # Set decree based on leader
+        self.set_leader_viziers()
     
     def get_legal_actions(self, turn_phase: TurnPhase, board: Board):
          # Implement logic to return legal actions for Eyrie Dynasties based on the turn phase
@@ -75,14 +81,24 @@ class EyrieDynasties(Faction):
             return False
         
         elif(current_phase == TurnPhase.DAYLIGHT):
+            # If turmoiled, can only end phase
+            if(len(actions_taken) and isinstance(actions_taken[-1], EyrieTurmoilAction)):
+                if(isinstance(action, EndPhaseAction)):
+                    return True
+                return False
+            
+            # Can always turmoil during daylight (for now)
+            if(isinstance(action, EyrieTurmoilAction)):
+                return True
+            
             # If recruit actions left, must finish them
-            if(len(self.decree.get(DecreeOption.Recruit, []))):
+            if(not self.resolved_decree_option(DecreeOption.Recruit)):
                 if(isinstance(action, EyrieRecruitAction)):
                     if(not board.is_valid_clearing(action.clearing_id)):
                         return False
                     if(DecreeOption.Recruit not in self.decree or len(self.decree.get(DecreeOption.Recruit, [])) == 0):
                         return False
-                    if(not board.clearings[action.clearing_id].suit in [card.suit for card in self.decree[DecreeOption.Recruit]]):
+                    if(not self.suit_exists_in_decree_option(DecreeOption.Recruit, board.clearings[action.clearing_id].suit)):
                         return False
                     if(not board.clearings[action.clearing_id].has_building(BuildingType.ROOST)):
                         return False
@@ -91,27 +107,27 @@ class EyrieDynasties(Faction):
                     return True
                 return False
             
-            elif(len(self.decree.get(DecreeOption.Move, []))):
+            elif(not self.resolved_decree_option(DecreeOption.Move)):
                 if(isinstance(action, EyrieMoveAction)):
                     if(not board.can_move(self.faction_name, action.num_warriors, action.source_clearing, action.destination_clearing)):
                         return False
-                    if(not board.clearings[action.source_clearing].suit in [card.suit for card in self.decree[DecreeOption.Move]]):
+                    if(not self.suit_exists_in_decree_option(DecreeOption.Move, board.clearings[action.source_clearing].suit)):
                         return False
                     return True
                 return False
             
-            elif(len(self.decree.get(DecreeOption.Battle, []))):
+            elif(not self.resolved_decree_option(DecreeOption.Battle)):
                 if(isinstance(action, EyrieBattleAction)):
                     if(not board.can_battle(self.faction_name, action.defender.faction.faction_name, action.clearing_id)):
                         return False
-                    if(not board.clearings[action.clearing_id].suit in [card.suit for card in self.decree[DecreeOption.Battle]]):
+                    if(not self.suit_exists_in_decree_option(DecreeOption.Battle, board.clearings[action.clearing_id].suit)):
                         return False
                     return True
                 return False
             
-            elif(len(self.decree.get(DecreeOption.Build, []))):
+            elif(not self.resolved_decree_option(DecreeOption.Build)):
                 if(isinstance(action, EyrieBuildAction)):
-                    if(not board.clearings[action.clearing_id].suit in [card.suit for card in self.decree[DecreeOption.Build]]):
+                    if(not self.suit_exists_in_decree_option(DecreeOption.Build, board.clearings[action.clearing_id].suit)):
                         return False
                     if(not board.clearings[action.clearing_id].ruler == self.faction_name):
                         return False
@@ -158,7 +174,7 @@ class EyrieDynasties(Faction):
                 player.hand.pop(action.card_id)
 
             elif(isinstance(action, EyrieRecruitAction)):
-                self.recruit(action.clearing_id, board)
+                board.clearings[action.clearing_id].add_warriors(FactionName.EYRIE_DYNASTIES, 1)
                 self.take_decree_action(board.clearings[action.clearing_id].suit, DecreeOption.Recruit)
             elif(isinstance(action, EyrieMoveAction)):
                 board.move_warriors(self.faction_name, action.num_warriors, action.source_clearing, action.destination_clearing)
@@ -169,18 +185,60 @@ class EyrieDynasties(Faction):
             elif(isinstance(action, EyrieBuildAction)):
                 board.build(action.clearing_id, BuildingType.ROOST)
                 self.take_decree_action(board.clearings[action.clearing_id].suit, DecreeOption.Build)
-                
+            
+            elif(isinstance(action, EyrieTurmoilAction)):
+                self.turmoil()
+
     def add_to_decree(self, card: Card, decree_option: DecreeOption):
         if decree_option not in self.decree:
             self.decree[decree_option] = []
         self.decree[decree_option].append(card)
     
-    def take_decree_action(self, suit: Suit, decree_option: DecreeOption):
-        for (id, card) in enumerate(self.decree[decree_option]):
-            if(card.suit == suit):
-                used_card = self.decree[decree_option].pop(id)
-                self.decree_actions_taken.setdefault(decree_option, []).append(used_card)
-                break
+    def get_remaining_decree(self, decree_option: DecreeOption):
+        return [card for card in self.decree.get(decree_option, []) if card not in self.decree_actions_taken.get(decree_option, [])]
     
-    def recruit(self, clearing_id: int, board: Board):        
-        board.clearings[clearing_id].add_warriors(FactionName.EYRIE_DYNASTIES, 1)
+    def take_decree_action(self, suit: Suit, decree_option: DecreeOption):
+        # Try and find card of corresponding suit
+        remaining_cards = self.get_remaining_decree(decree_option)
+        for card in remaining_cards:
+            if(card.suit == suit):
+                self.decree_actions_taken.setdefault(decree_option, []).append(card)
+                return
+        
+        # Default to using bird card if not found
+        for card in remaining_cards:
+            if(card.suit == Suit.Bird):
+                self.decree_actions_taken.setdefault(decree_option, []).append(card)
+                return
+        
+    def resolved_decree_option(self, decree_option: DecreeOption):
+        if(len(self.decree.get(decree_option, [])) - len(self.decree_actions_taken.get(decree_option, [])) == 0):
+            return True
+        else:
+            return False
+
+    def suit_exists_in_decree_option(self, decree_option: DecreeOption, suit: Suit):
+        remaining_cards = self.get_remaining_decree(decree_option)
+        for card in remaining_cards:
+            if(card.suit == suit or card.suit == Suit.Bird):
+                return True
+    
+    def set_leader_viziers(self):
+        for decree_option in LEADER_VIZIERS[self.leader]:
+            self.decree.setdefault(decree_option, []).append(Card("Vizier", Suit.Bird, 0))
+
+    def turmoil(self):
+        self.decree = {}
+        self.decree_actions_taken = {}
+        self.used_leaders.append(self.leader)
+
+        if(len(self.used_leaders) == len(EyrieLeader)):
+            self.used_leaders = []
+
+        leader_options = [leader for leader in EyrieLeader if leader not in self.used_leaders]
+        self.leader = random.choice(leader_options)
+        self.set_leader_viziers()
+    
+    def reset_state(self):
+        self.decree_actions_taken = {}
+

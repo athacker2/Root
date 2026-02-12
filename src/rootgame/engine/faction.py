@@ -19,3 +19,6 @@ class Faction(Protocol):
     
     def apply_action(self, action: Action, board: Board, player: Player):
         ...
+    
+    def reset_state(self):
+        ...

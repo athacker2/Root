@@ -18,10 +18,10 @@ def main():
 
                 if(player.faction.faction_name == "eyrie_dynasties"):
                     print(f"Current Decree:")
-                    print(f"Recruit: {[card.suit.__str__() for card in player.faction.decree.get(DecreeOption.Recruit, [])]}")
-                    print(f"Move: {[card.suit.__str__() for card in player.faction.decree.get(DecreeOption.Move, [])]}")
-                    print(f"Battle: {[card.suit.__str__() for card in player.faction.decree.get(DecreeOption.Battle, [])]}")
-                    print(f"Build: {[card.suit.__str__() for card in player.faction.decree.get(DecreeOption.Build, [])]}")
+                    print(f"Recruit: {[card.suit.__str__() for card in player.faction.get_remaining_decree(DecreeOption.Recruit)]}")
+                    print(f"Move: {[card.suit.__str__() for card in player.faction.get_remaining_decree(DecreeOption.Move)]}")
+                    print(f"Battle: {[card.suit.__str__() for card in player.faction.get_remaining_decree(DecreeOption.Battle)]}")
+                    print(f"Build: {[card.suit.__str__() for card in player.faction.get_remaining_decree(DecreeOption.Build)]}")
 
                 legal_actions = game.get_legal_actions(player)
                 print(f"Player {i + 1} actions: - {player.faction.faction_name}")
@@ -52,6 +52,8 @@ def main():
                         elif(chosen_action.startswith("ADD WOOD")):
                             chosen_action = AddWoodToSawmillsAction()
                         elif(chosen_action.startswith("MARCH")):
+                            if(len(chosen_action.split(" ")) != 7):
+                                continue
                             _, num_units_one, src_one, dest_one, num_units_two, src_two, dest_two = chosen_action.split(" ")
                             move_one = MoveAction(int(num_units_one), int(src_one), int(dest_one))
                             move_two = MoveAction(int(num_units_two), int(src_two), int(dest_two))
@@ -60,8 +62,8 @@ def main():
                             _, clearing_id, building_name = chosen_action.split(" ")
                             if(not (clearing_id.isdigit())):
                                 continue
-                        building_map = {"SAWMILL": BuildingType.SAWMILL, "WORKSHOP": BuildingType.WORKSHOP, "RECRUITER": BuildingType.RECRUITER}
-                        chosen_action = MarquiseBuildAction(int(clearing_id), building_map[building_name])
+                            building_map = {"SAWMILL": BuildingType.SAWMILL, "WORKSHOP": BuildingType.WORKSHOP, "RECRUITER": BuildingType.RECRUITER}
+                            chosen_action = MarquiseBuildAction(int(clearing_id), building_map[building_name])
                     elif(chosen_action.startswith("OVERWORK")):
                         _, clearing_id, card_idx = chosen_action.split(" ")
                         if(not (clearing_id.isdigit() and card_idx.isdigit())):
@@ -86,6 +88,8 @@ def main():
                                 continue
                             chosen_action = EyrieMoveAction(int(num_units), int(src), int(dest))
                         elif(chosen_action.startswith("BATTLE")):
+                            if(not len(chosen_action.split(" ") == 3)):
+                                continue
                             player_map = {"E": game.players[0], "M": game.players[1]}
                             _, clearing_id, defender = chosen_action.split(" ")
                             if(not clearing_id.isdigit()):
@@ -98,6 +102,8 @@ def main():
                             if(not clearing_id.isdigit()):
                                 continue
                             chosen_action = EyrieBuildAction(int(clearing_id))
+                        elif(chosen_action.startswith("TURMOIL")):
+                            chosen_action = EyrieTurmoilAction()
 
                 game.apply_action(player, chosen_action)
             

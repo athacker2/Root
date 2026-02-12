@@ -10,7 +10,7 @@ from rootgame.engine.eyrie_dynasties import EyrieDynasties
 
 from rootgame.engine.actions import *
 
-from rootgame.engine.types import TurnPhase
+from rootgame.engine.types import TurnPhase, EyrieLeader
 
 class Game:
     players: list[Player]
@@ -27,7 +27,7 @@ class Game:
     def __init__(self):
         # Initialize players, board, and game state
         self.players = [Player() for _ in range(2)]  # Assuming 2 players for now
-        self.players[0].faction = EyrieDynasties()
+        self.players[0].faction = EyrieDynasties(EyrieLeader.BUILDER)
         self.players[1].faction = MarquiseDeCat()
 
         self.deck = Deck()
@@ -65,6 +65,7 @@ class Game:
 
                 # Mark all buildings as unused at the end of the round
                 self.board.mark_all_buildings_unused()
+                player.faction.reset_state()
                 self.round += 1
         else:
             player.faction.apply_action(action, self.board, player)

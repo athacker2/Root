@@ -7,7 +7,7 @@ from rootgame.engine.board import Board
 from rootgame.engine.building import BuildingType
 from rootgame.engine.player import Player
 
-from rootgame.engine.types import MAX_HAND_SIZE, FactionName, TurnPhase, DecreeOption
+from rootgame.engine.types import MAX_HAND_SIZE, FactionName, Suit, TurnPhase, DecreeOption
 
 class Leader(StrEnum):
     DESPOT = auto()
@@ -64,19 +64,29 @@ class EyrieDynasties(Faction):
             return False
         
         elif(current_phase == TurnPhase.DAYLIGHT):
-            # Check if action is "RECRUIT", "MOVE", "BATTLE", or "BUILD" and if the player can perform the action
-            if(isinstance(action, EyrieRecruitAction)):
-                if(not board.is_valid_clearing(action.clearing_id)):
-                    return False
-                if(DecreeOption.Recruit not in self.decree or len(self.decree[DecreeOption.Recruit]) == 0):
-                    return False
-                if(not board.clearings[action.clearing_id].suit in [card.suit for card in self.decree[DecreeOption.Recruit]]):
-                    return False
-                if(not board.clearings[action.clearing_id].has_building(BuildingType.ROOST)):
-                    return False
+            # If recruit actions left, must finish them
+            if(len(self.decree[DecreeOption.Recruit])):
+                if(isinstance(action, EyrieRecruitAction)):
+                    if(not board.is_valid_clearing(action.clearing_id)):
+                        return False
+                    if(DecreeOption.Recruit not in self.decree or len(self.decree[DecreeOption.Recruit]) == 0):
+                        return False
+                    if(not board.clearings[action.clearing_id].suit in [card.suit for card in self.decree[DecreeOption.Recruit]]):
+                        return False
+                    if(not board.clearings[action.clearing_id].has_building(BuildingType.ROOST)):
+                        return False
+                    return True
+                return False
+            
+            elif(len(self.decree.get(DecreeOption.Move, []))):
+                pass
+            elif(len(self.decree.get(DecreeOption.Battle, []))):
+                pass
+            elif(len(self.decree.get(DecreeOption.Build, []))):
+                pass
+            elif(isinstance(action, EndPhaseAction)):
                 return True
-                    
-            return False
+                
         elif(current_phase == TurnPhase.EVENING):
             if(isinstance(action, DrawCardAction)):
                 if sum(isinstance(a, DrawCardAction) for a in actions_taken) == 1:
@@ -110,11 +120,20 @@ class EyrieDynasties(Faction):
                 player.hand.pop(action.card_id)
             elif(isinstance(action, EyrieRecruitAction)):
                 self.recruit(action.clearing_id, board)
+                self.take_decree_action(board.clearings[action.clearing_id].suit, DecreeOption.Recruit)
                 
-    def add_to_decree(self, card: Card, option: DecreeOption):
-        if option not in self.decree:
-            self.decree[option] = []
-        self.decree[option].append(card)
+    def add_to_decree(self, card: Card, decree_option: DecreeOption):
+        if decree_option not in self.decree:
+            self.decree[decree_option] = []
+        self.decree[decree_option].append(card)
+    
+    def take_decree_action(self, suit: Suit, decree_option: DecreeOption):
+        for (id, card) in enumerate(self.decree[decree_option]):
+            if(card.suit == suit):
+                used_card = self.decree[decree_option].pop(id)
+                self.decree_actions_taken.setdefault(decree_option, []).append(used_card)
+                break
+                
     
     def recruit(self, clearing_id: int, board: Board):        
         board.clearings[clearing_id].add_warriors(FactionName.EYRIE_DYNASTIES, 1)

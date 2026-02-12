@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from typing import ClassVar
+from rootgame.engine import actions
 from rootgame.engine.faction import Faction
 from rootgame.engine.player import Player
 from rootgame.engine.board import Board, Token, Clearing
@@ -60,7 +61,7 @@ class MarquiseDeCat(Faction):
     
     def is_action_legal(self, action: Action, current_phase: TurnPhase, player: Player, board: Board, actions_taken: list[Action]):
 
-        if(len(actions_taken) == 3 and current_phase == TurnPhase.DAYLIGHT and not isinstance(action, EndPhaseAction)):
+        if(len([a for a in actions_taken if not isinstance(a, MarquiseOverworkAction)]) == 3 and current_phase == TurnPhase.DAYLIGHT and not isinstance(action, EndPhaseAction)):
             return False
         
         if isinstance(action, AddWoodToSawmillsAction):
@@ -157,12 +158,15 @@ class MarquiseDeCat(Faction):
         
         elif(isinstance(action, MarquiseOverworkAction)):
             if(action.card_idx >= len(player.hand)):
+                print("bad card idx", action.card_idx, len(player.hand))
                 return False
             if(action.clearing_id >= len(board.clearings)):
                 return False
             if(player.hand[action.card_idx].suit != board.clearings[action.clearing_id].suit):
+                print("wrong suit", player.hand[action.card_idx].suit, board.clearings[action.clearing_id].suit)
                 return False
-            if(board.clearings[action.clearing_id].buildings.count(Building(BuildingType.SAWMILL, True)) == 0):
+            if(len([building for building in board.clearings[action.clearing_id].buildings if building.type == BuildingType.SAWMILL]) == 0):
+                print("no sawmills")
                 return False
             return True
         

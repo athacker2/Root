@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+from random import random
 from rootgame.shared.shared_types import ClearingInfo
 from rootgame.engine.types import FactionName
 from rootgame.engine.building import Building, BuildingType
@@ -103,7 +104,19 @@ class Board:
 
     def get_edges(self):
         return AUTUMN_BOARD_EDGES
+    
+    def can_move(self, faction: FactionName, numWarriors: int, source_clearing: int, dest_clearing: int):
+        if(not self.is_valid_clearing(source_clearing) or not self.is_valid_clearing(dest_clearing)):
+            return False
+        if(numWarriors <= 0):
+            return False
+        if(not self.clearings[source_clearing].is_adjacent(dest_clearing)):
+            return False
+        if(self.clearings[source_clearing].get_warrior_count(faction) < numWarriors):
+            return False
         
+        return True
+    
     def move_warriors(self, faction: FactionName, numWarriors: int, startClearing: int, endClearing: int):
         self.clearings[startClearing].remove_warriors(faction, numWarriors)
         self.clearings[endClearing].add_warriors(faction, numWarriors)
@@ -150,14 +163,12 @@ class Board:
 
         return True
     
-    def can_move(self, faction: FactionName, numWarriors: int, source_clearing: int, dest_clearing: int):
-        if(not self.is_valid_clearing(source_clearing) or not self.is_valid_clearing(dest_clearing)):
-            return False
-        if(numWarriors <= 0):
-            return False
-        if(not self.clearings[source_clearing].is_adjacent(dest_clearing)):
-            return False
-        if(self.clearings[source_clearing].get_warrior_count(faction) < numWarriors):
-            return False
-        
-        return True
+    def battle(self, attacker: FactionName, defender: FactionName, clearing_id: int):
+        battle_clearing = self.clearings[clearing_id]
+        rolls = [random.randint(0, 3) for _ in range(2)]
+
+        attack_hits = min(max(rolls), battle_clearing.get_warrior_count(attacker))
+        defense_hits = min(min(rolls), battle_clearing.get_warrior_count(defender))
+
+        battle_clearing.remove_warriors(attacker, defense_hits)
+        battle_clearing.remove_warriors(defender, attack_hits)

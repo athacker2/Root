@@ -5,7 +5,7 @@ from rootgame.engine.faction import Faction
 from rootgame.engine.player import Player
 from rootgame.engine.board import Board, Token, Clearing
 from rootgame.engine.building import Building, BuildingType
-from rootgame.engine.actions import Action, AddWoodToSawmillsAction, EndPhaseAction, MarchAction, MarquiseRecruitAction, MarquiseBuildAction, MarquiseOverworkAction, BattleAction, DrawCardAction, DiscardCardAction
+from rootgame.engine.actions import Action, AddWoodToSawmillsAction, EndPhaseAction, MarchAction, MarquiseRecruitAction, MarquiseBuildAction, MarquiseOverworkAction, BattleAction, DrawCardAction, DiscardCardAction, MoveAction
 
 from rootgame.engine.types import FactionName, TurnPhase, MAX_HAND_SIZE
 
@@ -184,6 +184,31 @@ class MarquiseDeCat(Faction):
                 return True
             
             return False
+        
+    def apply_action(self, action: Action, board: Board):
+        if isinstance(action, MoveAction):
+            num_warriors = action.num_warriors
+            source_clearing = action.source_clearing
+            destination_clearing = action.destination_clearing
+            board.move_warriors(self.faction_name, num_warriors, source_clearing, destination_clearing)
+        elif isinstance(action, BattleAction):
+            clearing_id = action.clearing_id
+            defender = action.defender
+            board.battle(self.faction_name, defender.faction.faction_name, clearing_id)
+        elif isinstance(action, AddWoodToSawmillsAction):
+            self.add_wood_to_sawmills(board)
+        
+        elif isinstance(action, MarchAction):
+            self.march(board, action.move_one.num_warriors, action.move_one.source_clearing, action.move_one.destination_clearing,
+                                    action.move_two.num_warriors, action.move_two.source_clearing, action.move_two.destination_clearing)
+        elif(isinstance(action, MarquiseRecruitAction)):
+            self.recruit(board)
+            
+        elif(isinstance(action, MarquiseBuildAction)):
+            self.build(board, action.clearing_id, action.building_type)
+        
+        elif(isinstance(action, MarquiseOverworkAction)):
+            self.overwork(board, action.clearing_id, player, action.card_idx)
     
     def add_wood_to_sawmills(self, board: Board):
         for clearing in board.clearings:

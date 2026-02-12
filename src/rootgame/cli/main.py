@@ -71,12 +71,9 @@ def main():
                             continue
                         chosen_action = MarquiseOverworkAction(int(clearing_id), int(card_idx))
 
-                turn_over = game.apply_action(player, chosen_action)
+                game.apply_action(player, chosen_action)
             
                 print("-" * 50)  # Separator for readability
-
-                if turn_over:
-                    break
             
 
 

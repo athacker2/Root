@@ -44,6 +44,13 @@ def main():
                         chosen_action = PlayCardAction(int(card_idx))
                     elif(chosen_action == "END PHASE"):
                         chosen_action = EndPhaseAction()
+                    elif(chosen_action == "DRAW CARD"):
+                        chosen_action = DrawCardAction()
+                    elif(chosen_action.startswith("DISCARD CARDS")):
+                        _, _, *card_idxs = chosen_action.split(" ")
+                        if(not all(idx.isdigit() for idx in card_idxs)):
+                            continue
+                        chosen_action = DiscardCardAction([int(idx) for idx in card_idxs])
                     elif(chosen_action.startswith("ADD WOOD")):
                         chosen_action = AddWoodToSawmillsAction()
                     elif(chosen_action.startswith("MARCH")):
@@ -64,12 +71,9 @@ def main():
                             continue
                         chosen_action = MarquiseOverworkAction(int(clearing_id), int(card_idx))
 
-                turn_over = game.apply_action(player, chosen_action)
+                game.apply_action(player, chosen_action)
             
                 print("-" * 50)  # Separator for readability
-
-                if turn_over:
-                    break
             
 
 

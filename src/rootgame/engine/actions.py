@@ -23,6 +23,14 @@ class PlayCardAction(Action):
     card_id: int
 
 @dataclass
+class DrawCardAction(Action):
+    pass
+
+@dataclass 
+class DiscardCardAction(Action):
+    card_ids: list[int]
+
+@dataclass
 class RecruitAction(Action):
     clearing_id: int
     num_units: int

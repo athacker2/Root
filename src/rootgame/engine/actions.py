@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from typing import Protocol
 from rootgame.engine.player import Player
+from rootgame.engine.building import BuildingType
 
 class Action(Protocol):
     pass
@@ -29,3 +30,27 @@ class RecruitAction(Action):
 @dataclass
 class EndPhaseAction(Action):
     pass
+
+# Marquise De Cat Actions
+@dataclass
+class AddWoodToSawmillsAction(Action):
+    pass
+
+@dataclass
+class MarchAction(Action):
+    move_one: MoveAction
+    move_two: MoveAction
+
+@dataclass
+class MarquiseRecruitAction(Action):
+    pass
+
+@dataclass
+class MarquiseBuildAction(Action):
+    clearing_id : int
+    building_type: BuildingType
+
+@dataclass 
+class MarquiseOverworkAction(Action):
+    clearing_id: int
+    card_idx: int

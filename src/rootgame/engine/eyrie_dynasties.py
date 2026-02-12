@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 from rootgame.engine.faction import Faction
-from rootgame.engine.board import Board, Building
+from rootgame.engine.board import Board
+from rootgame.engine.building import BuildingType
 
 from rootgame.engine.types import FactionName, TurnPhase
 
@@ -10,12 +11,12 @@ class EyrieDynasties(Faction):
 
     def board_setup(self, board: Board):
         # Place roost in bottom right
-        board.clearings[11].add_building(Building.ROOST)
+        board.build(11, BuildingType.ROOST)
 
         # Place 6 warriors in starting clearing
         board.clearings[11].add_warriors(FactionName.EYRIE_DYNASTIES, 6)
     
-    def get_legal_actions(self, turn_phase: TurnPhase):
+    def get_legal_actions(self, turn_phase: TurnPhase, board: Board):
          # Implement logic to return legal actions for Eyrie Dynasties based on the turn phase
         legal_actions = ["END PHASE"]
         if turn_phase == TurnPhase.BIRDSONG:

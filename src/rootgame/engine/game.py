@@ -1,5 +1,6 @@
 import random
 
+from rootgame.engine.game_log import GameLog
 from rootgame.engine.board import Board
 from rootgame.engine.deck import Deck
 from rootgame.engine.player import Player
@@ -7,7 +8,7 @@ from rootgame.engine.player import Player
 from rootgame.engine.marquise_de_cat import MarquiseDeCat
 from rootgame.engine.eyrie_dynasties import EyrieDynasties
 
-from rootgame.engine.actions import Action, MoveAction, BattleAction, PlayCardAction, RecruitAction, EndPhaseAction
+from rootgame.engine.actions import *
 
 from rootgame.engine.types import TurnPhase
 
@@ -15,6 +16,8 @@ class Game:
     players: list[Player]
     board: Board
     deck: Deck
+
+    game_log: GameLog
 
     # Turn-related data
     round: int = 0
@@ -34,12 +37,14 @@ class Game:
         self.board = Board()
         self.new_game_board_setup()
 
+        self.game_log = GameLog()
+
     def new_game_board_setup(self):
         for p in self.players:
             p.faction.board_setup(self.board)
 
     def get_legal_actions(self, player: Player):
-        return player.faction.get_legal_actions(self.current_phase)
+        return player.faction.get_legal_actions(self.current_phase, self.board)
     
     def is_action_legal(self, player: Player, action: Action):
         if(isinstance(action, MoveAction)):
@@ -91,6 +96,9 @@ class Game:
         elif isinstance(action, EndPhaseAction):
             return True
         
+        elif(isinstance(player.faction, MarquiseDeCat)):
+            return player.faction.is_action_legal(action, self.current_phase, player, self.board, self.game_log.get_actions_for_turn_phase(self.round, self.current_phase))
+        
         return False
             
     def apply_action(self, player: Player, action: Action):
@@ -102,7 +110,7 @@ class Game:
             num_warriors = action.num_warriors
             source_clearing = action.source_clearing
             destination_clearing = action.destination_clearing
-            self.move_warriors(player, num_warriors, source_clearing, destination_clearing)
+            self.board.move_warriors(player.faction.faction_name, num_warriors, source_clearing, destination_clearing)
 
         elif isinstance(action, PlayCardAction):
             card_id = action.card_id
@@ -128,14 +136,35 @@ class Game:
                 return False
             elif self.current_phase == TurnPhase.EVENING:
                 self.current_phase = TurnPhase.BIRDSONG
+
+                # Mark all buildings as unused at the end of the round
+                self.board.mark_all_buildings_unused()
                 self.round += 1
                 return True
+        
+        elif isinstance(action, AddWoodToSawmillsAction):
+            if(isinstance(player.faction, MarquiseDeCat)):
+                player.faction.add_wood_to_sawmills(self.board)
+        
+        elif isinstance(action, MarchAction):
+            if(isinstance(player.faction, MarquiseDeCat)):
+                player.faction.march(self.board, action.move_one.num_warriors, action.move_one.source_clearing, action.move_one.destination_clearing,
+                                     action.move_two.num_warriors, action.move_two.source_clearing, action.move_two.destination_clearing)
+        elif(isinstance(action, MarquiseRecruitAction)):
+            if(isinstance(player.faction, MarquiseDeCat)):
+                player.faction.recruit(self.board)
+            
+        elif(isinstance(action, MarquiseBuildAction)):
+            if(isinstance(player.faction, MarquiseDeCat)):
+                player.faction.build(self.board, action.clearing_id, action.building_type)
+        
+        elif(isinstance(action, MarquiseOverworkAction)):
+            if(isinstance(player.faction, MarquiseDeCat)):
+                player.faction.overwork(self.board, action.clearing_id, player, action.card_idx)
+        
+        self.game_log.log_action(self.round, player, self.current_phase, action)
 
         return False
-    
-    def move_warriors(self, player: Player, numWarriors: int, startClearing: int, endClearing: int):
-        self.board.clearings[startClearing].remove_warriors(player.faction.faction_name, numWarriors)
-        self.board.clearings[endClearing].add_warriors(player.faction.faction_name, numWarriors)
 
     def play_card(self, player: Player, card_idx: int):
         card = player.hand[card_idx]

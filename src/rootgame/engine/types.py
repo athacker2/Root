@@ -11,3 +11,9 @@ class TurnPhase(Enum):
     BIRDSONG = 1
     DAYLIGHT = 2
     EVENING = 3
+
+class Suit(StrEnum):
+    Bird = auto()
+    Fox = auto()
+    Rabbit = auto()
+    Mouse = auto()

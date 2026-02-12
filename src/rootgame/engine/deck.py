@@ -1,10 +1,12 @@
 from dataclasses import dataclass
 import random
 
+from rootgame.engine.types import Suit
+
 @dataclass
 class Card:
     name: str
-    suit: str
+    suit: Suit
     value: int
 
 @dataclass
@@ -15,8 +17,7 @@ class Deck:
         self.cards = []
 
         # Initialize the deck with cards
-        suits = ['Bird', 'Fox', 'Rabbit', 'Mouse']
-        for suit in suits:
+        for suit in Suit:
             for value in range(1, 4):
                 card_name = f"{suit.capitalize()} {value}"
                 self.cards.append(Card(name=card_name, suit=suit, value=value))

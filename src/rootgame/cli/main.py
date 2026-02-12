@@ -34,13 +34,35 @@ def main():
                         _, clearing_id, defender = chosen_action.split(" ")
                         chosen_action = BattleAction(int(clearing_id), player, player_map[defender])
                     elif(chosen_action.startswith("RECRUIT")):
-                        _, clearing_id, num_units = chosen_action.split(" ")
-                        chosen_action = RecruitAction(int(clearing_id), int(num_units))
+                        if(player.faction.faction_name == "marquise_de_cat"):
+                            chosen_action = MarquiseRecruitAction()
+                        else:
+                            _, clearing_id, num_units = chosen_action.split(" ")
+                            chosen_action = RecruitAction(int(clearing_id), int(num_units))
                     elif(chosen_action.startswith("PLAY CARD")):
                         _, _, card_idx = chosen_action.split(" ")
                         chosen_action = PlayCardAction(int(card_idx))
                     elif(chosen_action == "END PHASE"):
                         chosen_action = EndPhaseAction()
+                    elif(chosen_action.startswith("ADD WOOD")):
+                        chosen_action = AddWoodToSawmillsAction()
+                    elif(chosen_action.startswith("MARCH")):
+                        _, num_units_one, src_one, dest_one, num_units_two, src_two, dest_two = chosen_action.split(" ")
+                        move_one = MoveAction(int(num_units_one), int(src_one), int(dest_one))
+                        move_two = MoveAction(int(num_units_two), int(src_two), int(dest_two))
+                        chosen_action = MarchAction(move_one, move_two)
+                    elif(chosen_action.startswith("BUILD")):
+                        _, clearing_id, building_name = chosen_action.split(" ")
+                        if(not (clearing_id.isdigit())):
+                            continue
+
+                        building_map = {"SAWMILL": BuildingType.SAWMILL, "WORKSHOP": BuildingType.WORKSHOP, "RECRUITER": BuildingType.RECRUITER}
+                        chosen_action = MarquiseBuildAction(int(clearing_id), building_map[building_name])
+                    elif(chosen_action.startswith("OVERWORK")):
+                        _, clearing_id, card_idx = chosen_action.split(" ")
+                        if(not (clearing_id.isdigit() and card_idx.isdigit())):
+                            continue
+                        chosen_action = MarquiseOverworkAction(int(clearing_id), int(card_idx))
 
                 turn_over = game.apply_action(player, chosen_action)
             

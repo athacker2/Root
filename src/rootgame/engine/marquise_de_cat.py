@@ -185,7 +185,7 @@ class MarquiseDeCat(Faction):
             
             return False
         
-    def apply_action(self, action: Action, board: Board):
+    def apply_action(self, action: Action, board: Board, player: Player):
         if isinstance(action, MoveAction):
             num_warriors = action.num_warriors
             source_clearing = action.source_clearing

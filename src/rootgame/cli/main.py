@@ -7,14 +7,21 @@ def main():
     game = Game()
     renderer = make_renderer(edges=game.get_board_edges())
 
-    for _ in range(5):  # Simulate 5 rounds for demonstration
+    while(game.round < 10):
         for i, player in enumerate(game.players):
-            
-            while(True):
+            curr_round = game.round
+            while(game.round == curr_round):
                 print(f"Player {i + 1}'s turn. Current phase: {game.current_phase.name}")
                 print(renderer.render(game.get_clearing_state()))
                 
                 print(f"Player {i + 1} hand: {[card.name for card in player.hand]}")
+
+                if(player.faction.faction_name == "eyrie_dynasties"):
+                    print(f"Current Decree:")
+                    print(f"Recruit: {[card.suit.__str__() for card in player.faction.decree.get(DecreeOption.Recruit, [])]}")
+                    print(f"Move: {[card.suit.__str__() for card in player.faction.decree.get(DecreeOption.Move, [])]}")
+                    print(f"Battle: {[card.suit.__str__() for card in player.faction.decree.get(DecreeOption.Battle, [])]}")
+                    print(f"Build: {[card.suit.__str__() for card in player.faction.decree.get(DecreeOption.Build, [])]}")
 
                 legal_actions = game.get_legal_actions(player)
                 print(f"Player {i + 1} actions: - {player.faction.faction_name}")
@@ -30,7 +37,7 @@ def main():
                         _, num_units, src, dest = chosen_action.split(" ")
                         chosen_action = MoveAction(int(num_units), int(src), int(dest))
                     elif(chosen_action.startswith("BATTLE")):
-                        player_map = {"M": game.players[0], "E": game.players[1]}
+                        player_map = {"E": game.players[0], "M": game.players[1]}
                         _, clearing_id, defender = chosen_action.split(" ")
                         chosen_action = BattleAction(int(clearing_id), player, player_map[defender])
                     elif(chosen_action.startswith("RECRUIT")):
@@ -70,6 +77,12 @@ def main():
                         if(not (clearing_id.isdigit() and card_idx.isdigit())):
                             continue
                         chosen_action = MarquiseOverworkAction(int(clearing_id), int(card_idx))
+                    elif(chosen_action.startswith("ADD TO DECREE")):
+                        _, _, _, card_idx, option = chosen_action.split(" ")
+                        if(not card_idx.isdigit()):
+                            continue
+                        option_map = {"RECRUIT": DecreeOption.Recruit, "MOVE": DecreeOption.Move, "BATTLE": DecreeOption.Battle, "BUILD": DecreeOption.Build}
+                        chosen_action = EyrieAddToDecreeAction(int(card_idx), option_map[option])
 
                 game.apply_action(player, chosen_action)
             

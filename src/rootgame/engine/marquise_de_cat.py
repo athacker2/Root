@@ -4,7 +4,7 @@ from rootgame.engine.faction import Faction
 from rootgame.engine.player import Player
 from rootgame.engine.board import Board, Token, Clearing
 from rootgame.engine.building import Building, BuildingType
-from rootgame.engine.actions import Action, AddWoodToSawmillsAction, MarchAction, MarquiseRecruitAction, MarquiseBuildAction, MarquiseOverworkAction
+from rootgame.engine.actions import Action, AddWoodToSawmillsAction, EndPhaseAction, MarchAction, MarquiseRecruitAction, MarquiseBuildAction, MarquiseOverworkAction
 
 from rootgame.engine.types import FactionName, TurnPhase, Suit
 
@@ -58,9 +58,13 @@ class MarquiseDeCat(Faction):
         
         return legal_actions
     
-    def is_action_legal(self, action: Action, current_phase: TurnPhase, player: Player, board: Board):
+    def is_action_legal(self, action: Action, current_phase: TurnPhase, player: Player, board: Board, actions_taken: list[Action]):
+
+        if(len(actions_taken) == 3 and current_phase == TurnPhase.DAYLIGHT and not isinstance(action, EndPhaseAction)):
+            return False
+        
         if isinstance(action, AddWoodToSawmillsAction):
-            if len(board.get_unused_buildings(BuildingType.SAWMILL)) == 0:
+            if sum(isinstance(a, AddWoodToSawmillsAction) for a in actions_taken) == 1:
                 return False
             
             if current_phase != TurnPhase.BIRDSONG:
@@ -122,7 +126,6 @@ class MarquiseDeCat(Faction):
             return True
         
         elif(isinstance(action, MarquiseBuildAction)):
-            print("checking legality of building ", action.building_type, " in clearing ", action.clearing_id)
             if(current_phase != TurnPhase.DAYLIGHT):
                 return False
 
@@ -143,13 +146,11 @@ class MarquiseDeCat(Faction):
                 else:
                     wood_needed = self.building_cost[self.recruiters_placed]
 
-            print("wood needed: ", wood_needed)
             connected_clearings_with_wood = self.find_wood_in_connected_ruled_clearings(board, action.clearing_id)
             wood_available = 0
             for clearing in connected_clearings_with_wood:
                 wood_available += clearing.tokens.get(FactionName.MARQUISE_DE_CAT, []).count(Token.WOOD)
             
-            print("wood available: ", wood_available)
             if(wood_available < wood_needed):
                 return False
             return True
@@ -206,8 +207,6 @@ class MarquiseDeCat(Faction):
                         self.warriors_placed += 1
     
     def build(self, board: Board, clearing_id: int, building_type: BuildingType):
-        print("building ", building_type, " in clearing ", clearing_id)
-
         wood_needed = 0
         if(building_type is BuildingType.SAWMILL):
             wood_needed = self.building_cost[self.sawmills_placed]
@@ -215,8 +214,6 @@ class MarquiseDeCat(Faction):
             wood_needed = self.building_cost[self.workshops_placed]
         elif(building_type is BuildingType.RECRUITER):
             wood_needed = self.building_cost[self.recruiters_placed]
-
-        print("wood needed: ", wood_needed)
         
         connected_clearings_with_wood = self.find_wood_in_connected_ruled_clearings(board, clearing_id)
 
@@ -228,7 +225,6 @@ class MarquiseDeCat(Faction):
         
         # Add building to target clearing
         board.build(clearing_id, building_type)
-        print("built ", building_type, " in clearing ", clearing_id)
 
         if(building_type is BuildingType.SAWMILL):
             self.sawmills_placed += 1

@@ -1,6 +1,8 @@
 from typing import Protocol
+from build.lib.rootgame.engine.actions import Action
 from rootgame.engine.board import Board
 
+from rootgame.engine.player import Player
 from rootgame.engine.types import FactionName, TurnPhase
 
 class Faction(Protocol):
@@ -9,5 +11,5 @@ class Faction(Protocol):
     def board_setup(self, board: Board):
         ...
         
-    def get_legal_actions(self, turn_phase: TurnPhase, board: Board):
+    def get_legal_actions(self, action: Action, current_phase: TurnPhase, player: Player, board: Board, actions_taken: list[Action]):
         ...

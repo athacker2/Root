@@ -1,5 +1,6 @@
 import random
 
+from rootgame.engine.game_log import GameLog
 from rootgame.engine.board import Board
 from rootgame.engine.deck import Deck
 from rootgame.engine.player import Player
@@ -15,6 +16,8 @@ class Game:
     players: list[Player]
     board: Board
     deck: Deck
+
+    game_log: GameLog
 
     # Turn-related data
     round: int = 0
@@ -33,6 +36,8 @@ class Game:
 
         self.board = Board()
         self.new_game_board_setup()
+
+        self.game_log = GameLog()
 
     def new_game_board_setup(self):
         for p in self.players:
@@ -92,7 +97,7 @@ class Game:
             return True
         
         elif(isinstance(player.faction, MarquiseDeCat)):
-            return player.faction.is_action_legal(action, self.current_phase, player, self.board)
+            return player.faction.is_action_legal(action, self.current_phase, player, self.board, self.game_log.get_actions_for_turn_phase(self.round, self.current_phase))
         
         return False
             
@@ -151,6 +156,8 @@ class Game:
         elif(isinstance(action, MarquiseOverworkAction)):
             if(isinstance(player.faction, MarquiseDeCat)):
                 player.faction.overwork(self.board, action.clearing_id, player, action.card_idx)
+        
+        self.game_log.log_action(self.round, player, self.current_phase, action)
 
         return False
 

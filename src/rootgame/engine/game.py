@@ -143,7 +143,7 @@ class Game:
             
         elif(isinstance(action, MarquiseBuildAction)):
             if(isinstance(player.faction, MarquiseDeCat)):
-                player.faction.build(self.board, action.clearing_id, action.building)
+                player.faction.build(self.board, action.clearing_id, action.building_type)
 
         return False
 

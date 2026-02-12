@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Protocol
 from rootgame.engine.player import Player
-from rootgame.engine.board import Building
+from rootgame.engine.building import BuildingType
 
 class Action(Protocol):
     pass
@@ -48,4 +48,4 @@ class MarquiseRecruitAction(Action):
 @dataclass
 class MarquiseBuildAction(Action):
     clearing_id : int
-    building: Building
+    building_type: BuildingType

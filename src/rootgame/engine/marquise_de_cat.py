@@ -2,7 +2,8 @@ from dataclasses import dataclass
 from typing import ClassVar
 from rootgame.engine.faction import Faction
 from rootgame.engine.player import Player
-from rootgame.engine.board import Board, Token, Building, Clearing
+from rootgame.engine.board import Board, Token, Clearing
+from rootgame.engine.building import BuildingType
 from rootgame.engine.actions import Action, AddWoodToSawmillsAction, MarchAction, MarquiseRecruitAction, MarquiseBuildAction
 
 from rootgame.engine.types import FactionName, TurnPhase
@@ -34,9 +35,9 @@ class MarquiseDeCat(Faction):
         board.clearings[0].add_token(FactionName.MARQUISE_DE_CAT, Token.KEEP)
 
         # Place one of each building in clearings adjacent to keep
-        self.build(board, 4, Building.WORKSHOP)
-        self.build(board, 3, Building.SAWMILL)
-        self.build(board, 1, Building.RECRUITER)
+        self.build(board, 4, BuildingType.WORKSHOP)
+        self.build(board, 3, BuildingType.SAWMILL)
+        self.build(board, 1, BuildingType.RECRUITER)
 
         # Place 1 warrior in every clearing (except corner opposite to keep)
         for (id, clearing) in enumerate(board.clearings):
@@ -73,15 +74,15 @@ class MarquiseDeCat(Faction):
             source_clearing_one = action.move_one.source_clearing
             destination_clearing_one = action.move_one.destination_clearing
 
-            if(source_clearing_one >= len(self.board.clearings) or destination_clearing_one >= len(self.board.clearings)):
+            if(source_clearing_one >= len(board.clearings) or destination_clearing_one >= len(board.clearings)):
                 return False
             if(source_clearing_one == destination_clearing_one):
                 return False
-            if(not self.board.clearings[source_clearing_one].is_adjacent(destination_clearing_one)):
+            if(not board.clearings[source_clearing_one].is_adjacent(destination_clearing_one)):
                 return False
-            if(not self.board.clearings[destination_clearing_one].is_adjacent(source_clearing_one)):
+            if(not board.clearings[destination_clearing_one].is_adjacent(source_clearing_one)):
                 return False
-            if(self.board.clearings[source_clearing_one].get_warrior_count(player.faction.faction_name) < num_warriors_one):
+            if(board.clearings[source_clearing_one].get_warrior_count(player.faction.faction_name) < num_warriors_one):
                 return False
 
             # Validate second move, given first move
@@ -89,25 +90,25 @@ class MarquiseDeCat(Faction):
             source_clearing_two = action.move_two.source_clearing
             destination_clearing_two = action.move_two.destination_clearing
 
-            if(source_clearing_two >= len(self.board.clearings) or destination_clearing_two >= len(self.board.clearings)):
+            if(source_clearing_two >= len(board.clearings) or destination_clearing_two >= len(board.clearings)):
                 return False
             if(source_clearing_two == destination_clearing_two):
                 return False
-            if(not self.board.clearings[source_clearing_two].is_adjacent(destination_clearing_two)):
+            if(not board.clearings[source_clearing_two].is_adjacent(destination_clearing_two)):
                 return False
-            if(not self.board.clearings[destination_clearing_two].is_adjacent(source_clearing_two)):
+            if(not board.clearings[destination_clearing_two].is_adjacent(source_clearing_two)):
                 return False
 
             # Moving from same clearing --> second move has LESS warriors available
             if(source_clearing_one == source_clearing_two):
-                if(self.board.clearings[source_clearing_two].get_warrior_count(player.faction.faction_name) - num_warriors_one < num_warriors_two):
+                if(board.clearings[source_clearing_two].get_warrior_count(player.faction.faction_name) - num_warriors_one < num_warriors_two):
                     return False
             # Moving from first destination --> second move has MORE warriors available
             elif(destination_clearing_one == source_clearing_two):
-                if(self.board.clearings[source_clearing_two].get_warrior_count(player.faction.faction_name) + num_warriors_one < num_warriors_two):
+                if(board.clearings[source_clearing_two].get_warrior_count(player.faction.faction_name) + num_warriors_one < num_warriors_two):
                     return False
             else:
-                if(self.board.clearings[source_clearing_two].get_warrior_count(player.faction.faction_name) < num_warriors_two):
+                if(board.clearings[source_clearing_two].get_warrior_count(player.faction.faction_name) < num_warriors_two):
                     return False
             
             return True
@@ -118,22 +119,22 @@ class MarquiseDeCat(Faction):
             return True
         
         elif(isinstance(action, MarquiseBuildAction)):
-            print("checking legality of building ", action.building, " in clearing ", action.clearing_id)
+            print("checking legality of building ", action.building_type, " in clearing ", action.clearing_id)
             if(current_phase != TurnPhase.DAYLIGHT):
                 return False
 
             wood_needed = 0
-            if(action.building is Building.WORKSHOP):
+            if(action.building_type is BuildingType.WORKSHOP):
                 if(self.workshops_placed >= self.workshop_limit):
                     return False
                 else:
                     wood_needed = self.building_cost[self.workshops_placed]
-            elif(action.building is Building.SAWMILL):
+            elif(action.building_type is BuildingType.SAWMILL):
                 if(self.sawmills_placed >= self.sawmill_limit):
                     return False
                 else:
                     wood_needed = self.building_cost[self.sawmills_placed]
-            elif(action.building is Building.RECRUITER):
+            elif(action.building_type is BuildingType.RECRUITER):
                 if(self.recruiters_placed >= self.recruiter_limit):
                     return False
                 else:
@@ -155,7 +156,7 @@ class MarquiseDeCat(Faction):
     def add_wood_to_sawmills(self, board: Board):
         for clearing in board.clearings:
             for building in clearing.buildings:
-                if building is Building.SAWMILL:
+                if building.type is BuildingType.SAWMILL:
                     clearing.add_token(self.faction_name, Token.WOOD)
     
     def find_wood_in_connected_ruled_clearings(self, board: Board, clearing_id: int) -> list[Clearing]:
@@ -184,20 +185,20 @@ class MarquiseDeCat(Faction):
     def recruit(self, board: Board):
         for clearing in board.clearings:
             for building in clearing.buildings:
-                if building is Building.RECRUITER:
-                    if(self.warrior_supply):
+                if building.type is BuildingType.RECRUITER:
+                    if(self.warriors_placed < self.warrior_limit):
                         clearing.add_warriors(self.faction_name, 1)
-                        self.warrior_supply -= 1
+                        self.warriors_placed += 1
     
-    def build(self, board: Board, clearing_id: int, building: Building):
-        print("building ", building, " in clearing ", clearing_id)
+    def build(self, board: Board, clearing_id: int, building_type: BuildingType):
+        print("building ", building_type, " in clearing ", clearing_id)
 
         wood_needed = 0
-        if(building is Building.SAWMILL):
+        if(building_type is BuildingType.SAWMILL):
             wood_needed = self.building_cost[self.sawmills_placed]
-        elif(building is Building.WORKSHOP):
+        elif(building_type is BuildingType.WORKSHOP):
             wood_needed = self.building_cost[self.workshops_placed]
-        elif(building is Building.RECRUITER):
+        elif(building_type is BuildingType.RECRUITER):
             wood_needed = self.building_cost[self.recruiters_placed]
 
         print("wood needed: ", wood_needed)
@@ -211,13 +212,13 @@ class MarquiseDeCat(Faction):
                 wood_needed -= 1
         
         # Add building to target clearing
-        board.clearings[clearing_id].add_building(building)
-        print("built ", building, " in clearing ", clearing_id)
+        board.build(clearing_id, building_type)
+        print("built ", building_type, " in clearing ", clearing_id)
 
-        if(building is Building.SAWMILL):
+        if(building_type is BuildingType.SAWMILL):
             self.sawmills_placed += 1
-        elif(building is Building.WORKSHOP):
+        elif(building_type is BuildingType.WORKSHOP):
             self.workshops_placed += 1
-        elif(building is Building.RECRUITER):
+        elif(building_type is BuildingType.RECRUITER):
             self.recruiters_placed += 1
 

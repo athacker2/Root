@@ -53,7 +53,10 @@ def main():
                         chosen_action = MarchAction(move_one, move_two)
                     elif(chosen_action.startswith("BUILD")):
                         _, clearing_id, building_name = chosen_action.split(" ")
-                        building_map = {"SAWMILL": Building.SAWMILL, "WORKSHOP": Building.WORKSHOP, "RECRUITER": Building.RECRUITER}
+                        if(not (clearing_id.isdigit())):
+                            continue
+                        
+                        building_map = {"SAWMILL": BuildingType.SAWMILL, "WORKSHOP": BuildingType.WORKSHOP, "RECRUITER": BuildingType.RECRUITER}
                         chosen_action = MarquiseBuildAction(int(clearing_id), building_map[building_name])
 
                 turn_over = game.apply_action(player, chosen_action)

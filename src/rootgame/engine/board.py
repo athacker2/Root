@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 from rootgame.shared.shared_types import ClearingInfo
 from rootgame.engine.types import FactionName
+from rootgame.engine.building import Building, BuildingType
 
 from enum import StrEnum, auto
 
@@ -28,12 +29,6 @@ AUTUMN_BOARD_SUITS = [
 class Token(StrEnum):
     KEEP = auto()
     WOOD = auto()
-
-class Building(StrEnum):
-    WORKSHOP = auto()
-    SAWMILL = auto()
-    RECRUITER = auto()
-    ROOST = auto()
 
 @dataclass
 class Clearing:
@@ -75,9 +70,9 @@ class Clearing:
             for faction, count in self.warriors.items():
                 faction_counts[faction] = faction_counts.get(faction, 0) + count
             for building in self.buildings:
-                if building in [Building.WORKSHOP, Building.SAWMILL, Building.RECRUITER]:
+                if building.type == BuildingType.SAWMILL or building.type == BuildingType.RECRUITER or building.type == BuildingType.WORKSHOP:
                     faction_counts[FactionName.MARQUISE_DE_CAT] = faction_counts.get(FactionName.MARQUISE_DE_CAT, 0) + 1
-                elif building in [Building.ROOST]:
+                elif building.type == BuildingType.ROOST:
                     faction_counts[FactionName.EYRIE_DYNASTIES] = faction_counts.get(FactionName.EYRIE_DYNASTIES, 0) + 1
 
             # Determine the new ruler based on the highest count
@@ -102,7 +97,7 @@ class Board:
 
         for (id, clearing) in enumerate(self.clearings):
             clearing_info[id] = ClearingInfo()
-            clearing_info[id].tiles = clearing.buildings
+            clearing_info[id].tiles = [building.type for building in clearing.buildings]
             clearing_info[id].warriors = {key[0].upper(): value for (key, value) in clearing.warriors.items()}
             clearing_info[id].tokens = {key[0].upper(): value for (key, value) in clearing.tokens.items()}
             clearing_info[id].suit = clearing.suit
@@ -115,3 +110,6 @@ class Board:
     def move_warriors(self, faction: FactionName, numWarriors: int, startClearing: int, endClearing: int):
         self.clearings[startClearing].remove_warriors(faction, numWarriors)
         self.clearings[endClearing].add_warriors(faction, numWarriors)
+    
+    def build(self, clearing_id: int, building_type: BuildingType):
+        self.clearings[clearing_id].add_building(Building(type=building_type))

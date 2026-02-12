@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from enum import StrEnum, auto
-from rootgame.engine.actions import Action, DiscardCardAction, DrawCardAction, EndPhaseAction, EyrieAddToDecreeAction, EyrieRecruitAction
+from rootgame.engine.actions import Action, DiscardCardAction, DrawCardAction, EndPhaseAction, EyrieAddToDecreeAction, EyrieMoveAction, EyrieRecruitAction
 from rootgame.engine.deck import Card
 from rootgame.engine.faction import Faction
 from rootgame.engine.board import Board
@@ -65,11 +65,11 @@ class EyrieDynasties(Faction):
         
         elif(current_phase == TurnPhase.DAYLIGHT):
             # If recruit actions left, must finish them
-            if(len(self.decree[DecreeOption.Recruit])):
+            if(len(self.decree.get(DecreeOption.Recruit, []))):
                 if(isinstance(action, EyrieRecruitAction)):
                     if(not board.is_valid_clearing(action.clearing_id)):
                         return False
-                    if(DecreeOption.Recruit not in self.decree or len(self.decree[DecreeOption.Recruit]) == 0):
+                    if(DecreeOption.Recruit not in self.decree or len(self.decree.get(DecreeOption.Recruit, [])) == 0):
                         return False
                     if(not board.clearings[action.clearing_id].suit in [card.suit for card in self.decree[DecreeOption.Recruit]]):
                         return False
@@ -79,7 +79,13 @@ class EyrieDynasties(Faction):
                 return False
             
             elif(len(self.decree.get(DecreeOption.Move, []))):
-                pass
+                if(isinstance(action, EyrieMoveAction)):
+                    if(not board.can_move(self.faction_name, action.num_warriors, action.source_clearing, action.destination_clearing)):
+                        return False
+                    if(not board.clearings[action.source_clearing].suit in [card.suit for card in self.decree[DecreeOption.Move]]):
+                        return False
+                    return True
+                return False
             elif(len(self.decree.get(DecreeOption.Battle, []))):
                 pass
             elif(len(self.decree.get(DecreeOption.Build, []))):
@@ -121,6 +127,9 @@ class EyrieDynasties(Faction):
             elif(isinstance(action, EyrieRecruitAction)):
                 self.recruit(action.clearing_id, board)
                 self.take_decree_action(board.clearings[action.clearing_id].suit, DecreeOption.Recruit)
+            elif(isinstance(action, EyrieMoveAction)):
+                board.move_warriors(self.faction_name, action.num_warriors, action.source_clearing, action.destination_clearing)
+                self.take_decree_action(board.clearings[action.source_clearing].suit, DecreeOption.Move)
                 
     def add_to_decree(self, card: Card, decree_option: DecreeOption):
         if decree_option not in self.decree:

@@ -73,3 +73,9 @@ class EyrieAddToDecreeAction(Action):
 @dataclass
 class EyrieRecruitAction(Action):
     clearing_id: int
+
+@dataclass
+class EyrieMoveAction(Action):
+        num_warriors: int
+        source_clearing: int
+        destination_clearing: int

@@ -80,7 +80,11 @@ def main():
                             if(not clearing_id.isdigit()):
                                 continue
                             chosen_action = EyrieRecruitAction(int(clearing_id))
-
+                        elif(chosen_action.startswith("MOVE")):
+                            _, num_units, src, dest = chosen_action.split(" ")
+                            if(not num_units.isdigit() or not src.isdigit() or not dest.isdigit()):
+                                continue
+                            chosen_action = EyrieMoveAction(int(num_units), int(src), int(dest))
                 game.apply_action(player, chosen_action)
             
                 print("-" * 50)  # Separator for readability

@@ -117,6 +117,8 @@ class Board:
             return False
         if(self.clearings[source_clearing].get_warrior_count(faction) < numWarriors):
             return False
+        if(not self.clearings[source_clearing].ruler == faction and not self.clearings[dest_clearing].ruler == faction):
+            return False
         
         return True
     

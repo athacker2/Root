@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from enum import StrEnum, auto
-from rootgame.engine.actions import Action, DiscardCardAction, DrawCardAction, EndPhaseAction, EyrieAddToDecreeAction, EyrieMoveAction, EyrieRecruitAction
+from rootgame.engine.actions import Action, DiscardCardAction, DrawCardAction, EndPhaseAction, EyrieAddToDecreeAction, EyrieBattleAction, EyrieMoveAction, EyrieRecruitAction
 from rootgame.engine.deck import Card
 from rootgame.engine.faction import Faction
 from rootgame.engine.board import Board
@@ -86,8 +86,16 @@ class EyrieDynasties(Faction):
                         return False
                     return True
                 return False
+            
             elif(len(self.decree.get(DecreeOption.Battle, []))):
-                pass
+                if(isinstance(action, EyrieBattleAction)):
+                    if(not board.can_battle(self.faction_name, action.defender.faction.faction_name, action.clearing_id)):
+                        return False
+                    if(not board.clearings[action.clearing_id].suit in [card.suit for card in self.decree[DecreeOption.Battle]]):
+                        return False
+                    return True
+                return False
+            
             elif(len(self.decree.get(DecreeOption.Build, []))):
                 pass
             elif(isinstance(action, EndPhaseAction)):
@@ -130,6 +138,9 @@ class EyrieDynasties(Faction):
             elif(isinstance(action, EyrieMoveAction)):
                 board.move_warriors(self.faction_name, action.num_warriors, action.source_clearing, action.destination_clearing)
                 self.take_decree_action(board.clearings[action.source_clearing].suit, DecreeOption.Move)
+            elif(isinstance(action, EyrieBattleAction)):
+                board.battle(self.faction_name, action.defender.faction.faction_name, action.clearing_id)
+                self.take_decree_action(board.clearings[action.clearing_id].suit, DecreeOption.Battle)
                 
     def add_to_decree(self, card: Card, decree_option: DecreeOption):
         if decree_option not in self.decree:

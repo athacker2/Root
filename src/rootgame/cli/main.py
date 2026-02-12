@@ -34,10 +34,6 @@ def main():
 
                     if(chosen_action == "END PHASE"):
                         chosen_action = EndPhaseAction()
-                    elif(chosen_action.startswith("BATTLE")):
-                        player_map = {"E": game.players[0], "M": game.players[1]}
-                        _, clearing_id, defender = chosen_action.split(" ")
-                        chosen_action = BattleAction(int(clearing_id), player, player_map[defender])
                     elif(chosen_action == "DRAW CARD"):
                         chosen_action = DrawCardAction()
                     elif(chosen_action.startswith("DISCARD CARDS")):
@@ -49,6 +45,10 @@ def main():
                     elif(player.faction.faction_name == "marquise_de_cat"):
                         if(chosen_action.startswith("RECRUIT")):
                             chosen_action = MarquiseRecruitAction()
+                        elif(chosen_action.startswith("BATTLE")):
+                            player_map = {"E": game.players[0], "M": game.players[1]}
+                            _, clearing_id, defender = chosen_action.split(" ")
+                            chosen_action = BattleAction(int(clearing_id), player, player_map[defender])
                         elif(chosen_action.startswith("ADD WOOD")):
                             chosen_action = AddWoodToSawmillsAction()
                         elif(chosen_action.startswith("MARCH")):
@@ -85,6 +85,15 @@ def main():
                             if(not num_units.isdigit() or not src.isdigit() or not dest.isdigit()):
                                 continue
                             chosen_action = EyrieMoveAction(int(num_units), int(src), int(dest))
+                        elif(chosen_action.startswith("BATTLE")):
+                            player_map = {"E": game.players[0], "M": game.players[1]}
+                            _, clearing_id, defender = chosen_action.split(" ")
+                            if(not clearing_id.isdigit()):
+                                continue
+                            if(not defender in player_map.keys()):
+                                continue
+                            chosen_action = EyrieBattleAction(int(clearing_id), player, player_map[defender])
+
                 game.apply_action(player, chosen_action)
             
                 print("-" * 50)  # Separator for readability

@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from random import random
+import random
 from rootgame.shared.shared_types import ClearingInfo
 from rootgame.engine.types import FactionName
 from rootgame.engine.building import Building, BuildingType

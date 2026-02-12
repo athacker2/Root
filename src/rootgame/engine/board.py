@@ -59,6 +59,9 @@ class Clearing:
         self.buildings.append(building)
         self.update_ruler()
     
+    def has_building(self, building_type: BuildingType):
+        return any(building.type == building_type for building in self.buildings)
+    
     def is_adjacent(self, other_clearing_id: int):
         return other_clearing_id in self.adjacentClearings
     

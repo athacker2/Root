@@ -69,3 +69,7 @@ class MarquiseOverworkAction(Action):
 class EyrieAddToDecreeAction(Action):
     card_id: int
     decree_option: DecreeOption
+
+@dataclass
+class EyrieRecruitAction(Action):
+    clearing_id: int

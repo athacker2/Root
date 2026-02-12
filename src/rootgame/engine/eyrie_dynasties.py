@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from enum import StrEnum, auto
-from rootgame.engine.actions import Action, DiscardCardAction, DrawCardAction, EndPhaseAction, EyrieAddToDecreeAction
+from rootgame.engine.actions import Action, DiscardCardAction, DrawCardAction, EndPhaseAction, EyrieAddToDecreeAction, EyrieRecruitAction
 from rootgame.engine.deck import Card
 from rootgame.engine.faction import Faction
 from rootgame.engine.board import Board
@@ -18,8 +18,11 @@ class Leader(StrEnum):
 @dataclass
 class EyrieDynasties(Faction):
     faction_name = FactionName.EYRIE_DYNASTIES
-    decree: map[DecreeOption, list[Card]] = field(default_factory=dict)
+
     leader: Leader | None = None
+
+    decree: dict[DecreeOption, list[Card]] = field(default_factory=dict)
+    decree_actions_taken: dict[DecreeOption, list[Card]] = field(default_factory=dict)
 
     def board_setup(self, board: Board):
         # Place roost in bottom right
@@ -62,6 +65,17 @@ class EyrieDynasties(Faction):
         
         elif(current_phase == TurnPhase.DAYLIGHT):
             # Check if action is "RECRUIT", "MOVE", "BATTLE", or "BUILD" and if the player can perform the action
+            if(isinstance(action, EyrieRecruitAction)):
+                if(not board.is_valid_clearing(action.clearing_id)):
+                    return False
+                if(DecreeOption.Recruit not in self.decree or len(self.decree[DecreeOption.Recruit]) == 0):
+                    return False
+                if(not board.clearings[action.clearing_id].suit in [card.suit for card in self.decree[DecreeOption.Recruit]]):
+                    return False
+                if(not board.clearings[action.clearing_id].has_building(BuildingType.ROOST)):
+                    return False
+                return True
+                    
             return False
         elif(current_phase == TurnPhase.EVENING):
             if(isinstance(action, DrawCardAction)):
@@ -94,8 +108,13 @@ class EyrieDynasties(Faction):
                 card = player.hand[action.card_id]
                 self.add_to_decree(card, action.decree_option)
                 player.hand.pop(action.card_id)
+            elif(isinstance(action, EyrieRecruitAction)):
+                self.recruit(action.clearing_id, board)
                 
     def add_to_decree(self, card: Card, option: DecreeOption):
         if option not in self.decree:
             self.decree[option] = []
         self.decree[option].append(card)
+    
+    def recruit(self, clearing_id: int, board: Board):        
+        board.clearings[clearing_id].add_warriors(FactionName.EYRIE_DYNASTIES, 1)

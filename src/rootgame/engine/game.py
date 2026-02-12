@@ -39,7 +39,7 @@ class Game:
             p.faction.board_setup(self.board)
 
     def get_legal_actions(self, player: Player):
-        return player.faction.get_legal_actions(self.current_phase)
+        return player.faction.get_legal_actions(self.current_phase, self.board)
     
     def is_action_legal(self, player: Player, action: Action):
         if(isinstance(action, MoveAction)):
@@ -126,6 +126,9 @@ class Game:
                 return False
             elif self.current_phase == TurnPhase.EVENING:
                 self.current_phase = TurnPhase.BIRDSONG
+
+                # Mark all buildings as unused at the end of the round
+                self.board.mark_all_buildings_unused()
                 self.round += 1
                 return True
         

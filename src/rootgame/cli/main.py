@@ -44,7 +44,7 @@ def main():
                         chosen_action = PlayCardAction(int(card_idx))
                     elif(chosen_action == "END PHASE"):
                         chosen_action = EndPhaseAction()
-                    elif(chosen_action == "ADD WOOD TO SAWMILLS"):
+                    elif(chosen_action.startswith("ADD WOOD")):
                         chosen_action = AddWoodToSawmillsAction()
                     elif(chosen_action.startswith("MARCH")):
                         _, num_units_one, src_one, dest_one, num_units_two, src_two, dest_two = chosen_action.split(" ")
@@ -55,7 +55,7 @@ def main():
                         _, clearing_id, building_name = chosen_action.split(" ")
                         if(not (clearing_id.isdigit())):
                             continue
-                        
+
                         building_map = {"SAWMILL": BuildingType.SAWMILL, "WORKSHOP": BuildingType.WORKSHOP, "RECRUITER": BuildingType.RECRUITER}
                         chosen_action = MarquiseBuildAction(int(clearing_id), building_map[building_name])
 

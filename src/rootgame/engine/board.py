@@ -113,3 +113,16 @@ class Board:
     
     def build(self, clearing_id: int, building_type: BuildingType):
         self.clearings[clearing_id].add_building(Building(type=building_type))
+    
+    def get_unused_buildings(self, building_type: BuildingType):
+        buildings = []
+        for clearing in self.clearings:
+            for building in clearing.buildings:
+                if building.type == building_type and not building.used:
+                    buildings.append(building)
+        return buildings
+
+    def mark_all_buildings_unused(self):
+        for clearing in self.clearings:
+            for building in clearing.buildings:
+                building.used = False

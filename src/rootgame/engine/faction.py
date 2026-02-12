@@ -9,5 +9,5 @@ class Faction(Protocol):
     def board_setup(self, board: Board):
         ...
         
-    def get_legal_actions(self, turn_phase: TurnPhase):
+    def get_legal_actions(self, turn_phase: TurnPhase, board: Board):
         ...

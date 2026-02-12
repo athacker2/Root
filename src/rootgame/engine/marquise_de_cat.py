@@ -44,11 +44,12 @@ class MarquiseDeCat(Faction):
             if id != 11:
                 clearing.add_warriors(FactionName.MARQUISE_DE_CAT, 1)
 
-    def get_legal_actions(self, turn_phase: TurnPhase):
+    def get_legal_actions(self, turn_phase: TurnPhase, board: Board):
         # Implement logic to return legal actions for Marquise de Cat based on the turn phase
         legal_actions = ["END PHASE"]
         if turn_phase == TurnPhase.BIRDSONG:
-            legal_actions.extend(["ADD WOOD TO SAWMILLS"])
+            if len(board.get_unused_buildings(BuildingType.SAWMILL)) > 0:
+                legal_actions.extend(["ADD WOOD"])
 
         elif turn_phase == TurnPhase.DAYLIGHT:
             legal_actions.extend(["PLAY CARD #", "BATTLE X", "MOVE # # #", "RECRUIT #"])
@@ -60,6 +61,9 @@ class MarquiseDeCat(Faction):
     
     def is_action_legal(self, action: Action, current_phase: TurnPhase, player: Player, board: Board):
         if isinstance(action, AddWoodToSawmillsAction):
+            if len(board.get_unused_buildings(BuildingType.SAWMILL)) == 0:
+                return False
+            
             if current_phase != TurnPhase.BIRDSONG:
                 return False
             
@@ -157,6 +161,7 @@ class MarquiseDeCat(Faction):
         for clearing in board.clearings:
             for building in clearing.buildings:
                 if building.type is BuildingType.SAWMILL:
+                    building.used = True
                     clearing.add_token(self.faction_name, Token.WOOD)
     
     def find_wood_in_connected_ruled_clearings(self, board: Board, clearing_id: int) -> list[Clearing]:

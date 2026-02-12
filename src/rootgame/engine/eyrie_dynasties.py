@@ -16,7 +16,7 @@ class EyrieDynasties(Faction):
         # Place 6 warriors in starting clearing
         board.clearings[11].add_warriors(FactionName.EYRIE_DYNASTIES, 6)
     
-    def get_legal_actions(self, turn_phase: TurnPhase):
+    def get_legal_actions(self, turn_phase: TurnPhase, board: Board):
          # Implement logic to return legal actions for Eyrie Dynasties based on the turn phase
         legal_actions = ["END PHASE"]
         if turn_phase == TurnPhase.BIRDSONG:

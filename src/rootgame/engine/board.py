@@ -137,7 +137,7 @@ class Board:
         elif(building_type == BuildingType.ROOST):
             self.clearings[clearing_id].add_building(Building(type=building_type, owner=FactionName.EYRIE_DYNASTIES))
     
-    def get_building(self, building_type: BuildingType):
+    def get_buildings(self, building_type: BuildingType):
         buildings = []
         for clearing in self.clearings:
             for building in clearing.buildings:

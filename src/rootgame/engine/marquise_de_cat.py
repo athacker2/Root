@@ -298,7 +298,6 @@ class MarquiseDeCat(Faction):
     
     def overwork(self, board: Board, clearing_id: int, player: Player, card_idx: int):
         # Use card
-        card = player.hand[card_idx]
         player.hand.pop(card_idx)  # Remove the card from player's hand
 
         # Add wood to sawmill at clearing

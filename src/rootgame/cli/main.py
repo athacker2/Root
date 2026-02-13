@@ -14,7 +14,10 @@ def main():
                 print(f"Player {i + 1}'s turn. Current phase: {game.current_phase.name}")
                 print(renderer.render(game.get_clearing_state()))
                 
-                print(f"Player {i + 1} hand: {[card.name for card in player.hand]}")
+                print(f"Player {i + 1} hand:")
+                for card in player.hand:
+                    print(card)
+                print()
 
                 if(player.faction.faction_name == "eyrie_dynasties"):
                     print(f"Current Decree:")
@@ -22,6 +25,7 @@ def main():
                     print(f"Move: {[card.suit.__str__() for card in player.faction.get_remaining_decree(DecreeOption.Move)]}")
                     print(f"Battle: {[card.suit.__str__() for card in player.faction.get_remaining_decree(DecreeOption.Battle)]}")
                     print(f"Build: {[card.suit.__str__() for card in player.faction.get_remaining_decree(DecreeOption.Build)]}")
+                    print()
 
                 legal_actions = game.get_legal_actions(player)
                 print(f"Player {i + 1} actions: - {player.faction.faction_name}")

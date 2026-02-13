@@ -32,7 +32,7 @@ class Game:
 
         self.deck = Deck()
         for player in self.players:
-            player.hand = self.deck.draw_card(5)  # Each player starts with 5 cards
+            player.hand = self.deck.draw_card(3)  # Each player starts with 3 cards
 
         self.board = Board()
         self.new_game_board_setup()
@@ -74,7 +74,7 @@ class Game:
     def play_card(self, player: Player, card_idx: int):
         card = player.hand[card_idx]
         player.hand.pop(card_idx)  # Remove the card from player's hand
-        print(f"Playing card: {card.name}")
+        print(f"Playing card: {card.suit}")
     
     def discard_cards(self, player: Player, cards: list[int]):
         new_hand = list()

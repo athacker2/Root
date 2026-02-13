@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 
-from build.lib.rootgame.engine.player import Player
+from rootgame.engine.player import Player
 from rootgame.engine.actions import Action
 from rootgame.engine.types import TurnPhase
 

@@ -34,10 +34,10 @@ def main():
 
                     if(chosen_action == "END PHASE"):
                         chosen_action = EndPhaseAction()
-                    elif(chosen_action == "DRAW CARD"):
+                    elif(chosen_action == "DRAW"):
                         chosen_action = DrawCardAction()
-                    elif(chosen_action.startswith("DISCARD CARDS")):
-                        _, _, *card_idxs = chosen_action.split(" ")
+                    elif(chosen_action.startswith("DISCARD")):
+                        _, *card_idxs = chosen_action.split(" ")
                         if(not all(idx.isdigit() for idx in card_idxs)):
                             continue
                         chosen_action = DiscardCardAction([int(idx) for idx in card_idxs])

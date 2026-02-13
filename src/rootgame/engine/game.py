@@ -50,10 +50,7 @@ class Game:
         return player.faction.is_action_legal(action, self.current_phase, player, self.board, self.game_log.get_actions_for_turn_phase(self.round, self.current_phase))
             
     def apply_action(self, player: Player, action: Action):
-        # Check if is legal action
-        if(not self.is_action_legal(player, action)):
-            raise ValueError("Illegal Action Received")
-        elif isinstance(action, EndPhaseAction):
+        if isinstance(action, EndPhaseAction):
             if(self.current_phase == TurnPhase.BIRDSONG):
                 self.current_phase = TurnPhase.DAYLIGHT
                 return False
@@ -67,6 +64,10 @@ class Game:
                 self.board.mark_all_buildings_unused()
                 player.faction.reset_state()
                 self.round += 1
+        elif(isinstance(action, DrawCardAction)):
+            player.hand.extend(self.deck.draw_card(1))
+        elif(isinstance(action, DiscardCardAction)):
+            self.discard_cards(player, action.card_ids)
         else:
             player.faction.apply_action(action, self.board, player)
         
@@ -76,6 +77,13 @@ class Game:
         card = player.hand[card_idx]
         player.hand.pop(card_idx)  # Remove the card from player's hand
         print(f"Playing card: {card.name}")
+    
+    def discard_cards(self, player: Player, cards: list[int]):
+        new_hand = list()
+        for (id, card) in enumerate(player.hand):
+            if(not id in cards):
+                new_hand.append(card)
+        player.hand = new_hand
 
     def get_clearing_state(self):
         return self.board.export_clearing_info()

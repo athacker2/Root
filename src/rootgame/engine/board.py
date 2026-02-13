@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 import random
 from rootgame.shared.shared_types import ClearingInfo
-from rootgame.engine.types import FactionName
+from rootgame.engine.types import FactionName, Suit
 from rootgame.engine.building import Building, BuildingType
 
 from enum import StrEnum, auto
@@ -21,10 +21,10 @@ AUTUMN_BOARD_EDGES = [
 ]
 
 AUTUMN_BOARD_SUITS = [
-    "fox", "rabbit", "mouse",
-    "rabbit", "mouse", "fox",
-    "mouse", "fox", "rabbit",
-    "fox", "mouse", "rabbit"
+    Suit.Fox, Suit.Rabbit, Suit.Mouse,
+    Suit.Rabbit, Suit.Mouse, Suit.Fox,
+    Suit.Mouse, Suit.Fox, Suit.Rabbit,
+    Suit.Fox, Suit.Mouse, Suit.Rabbit
 ]
 
 class Token(StrEnum):

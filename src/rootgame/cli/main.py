@@ -76,6 +76,8 @@ def main():
                             if(not card_idx.isdigit()):
                                 continue
                             option_map = {"RECRUIT": DecreeOption.Recruit, "MOVE": DecreeOption.Move, "BATTLE": DecreeOption.Battle, "BUILD": DecreeOption.Build}
+                            if(not option in option_map.keys()):
+                                continue
                             chosen_action = EyrieAddToDecreeAction(int(card_idx), option_map[option])
                         elif(chosen_action.startswith("RECRUIT")):
                             _, clearing_id = chosen_action.split(" ")

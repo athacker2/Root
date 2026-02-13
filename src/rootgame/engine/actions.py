@@ -97,3 +97,7 @@ class EyrieBuildAction(Action):
 @dataclass
 class EyrieTurmoilAction(Action):
     pass
+
+@dataclass
+class EyrieCraftAction(Action):
+    card_idx: int

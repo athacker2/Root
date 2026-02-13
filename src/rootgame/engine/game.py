@@ -27,8 +27,8 @@ class Game:
     def __init__(self):
         # Initialize players, board, and game state
         self.players = [Player() for _ in range(2)]  # Assuming 2 players for now
-        self.players[1].faction = EyrieDynasties(EyrieLeader.BUILDER)
-        self.players[0].faction = MarquiseDeCat()
+        self.players[0].faction = EyrieDynasties(EyrieLeader.BUILDER)
+        self.players[1].faction = MarquiseDeCat()
 
         self.deck = Deck()
         for player in self.players:

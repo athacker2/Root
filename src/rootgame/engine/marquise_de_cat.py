@@ -241,6 +241,7 @@ class MarquiseDeCat(Faction):
             clearing_id = action.clearing_id
             defender = action.defender
             board.battle(self.faction_name, defender.faction.faction_name, clearing_id)
+            
         elif isinstance(action, AddWoodToSawmillsAction):
             self.add_wood_to_sawmills(board)
         

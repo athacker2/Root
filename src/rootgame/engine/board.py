@@ -37,7 +37,7 @@ class Clearing:
     buildings: list[Building] = field(default_factory=list)
     warriors: dict[FactionName, int] = field(default_factory=dict)
     tokens: dict[FactionName, list[Token]] = field(default_factory=dict)
-    suit: str = ""
+    suit: Suit | None = None
     ruler: FactionName | None = None
 
     def add_token(self, faction: FactionName, token: Token):

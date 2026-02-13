@@ -241,7 +241,7 @@ class MarquiseDeCat(Faction):
             clearing_id = action.clearing_id
             defender = action.defender
             board.battle(self.faction_name, defender.faction.faction_name, clearing_id)
-            
+
         elif isinstance(action, AddWoodToSawmillsAction):
             self.add_wood_to_sawmills(board)
         
@@ -259,6 +259,7 @@ class MarquiseDeCat(Faction):
 
         elif(isinstance(action, MarquiseCraftAction)):
             used_card: ItemCard = player.hand.pop(action.card_idx)
+            board.use_crafting_requirements(building_type=BuildingType.WORKSHOP, crafting_requirements=used_card.crafting_requirements)
     
     def add_wood_to_sawmills(self, board: Board):
         for clearing in board.clearings:

@@ -217,6 +217,7 @@ class EyrieDynasties(Faction):
             
             elif(isinstance(action, EyrieCraftAction)):
                 used_card: ItemCard = player.hand.pop(action.card_idx)
+                board.use_crafting_requirements(building_type=BuildingType.ROOST, crafting_requirements=used_card.crafting_requirements)
 
     def add_to_decree(self, card: Card, decree_option: DecreeOption):
         if decree_option not in self.decree:

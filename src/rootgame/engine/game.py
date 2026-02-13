@@ -32,7 +32,7 @@ class Game:
 
         self.deck = Deck()
         for player in self.players:
-            player.hand = self.deck.draw_card(3)  # Each player starts with 3 cards
+            player.hand = self.deck.draw_card(10)  # Each player starts with 3 cards
 
         self.board = Board()
         self.new_game_board_setup()

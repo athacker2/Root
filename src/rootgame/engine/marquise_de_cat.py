@@ -136,19 +136,19 @@ class MarquiseDeCat(Faction):
                         print("Out of sawmills")
                         return False
                     else:
-                        wood_needed = self.building_cost[self.sawmills_placed - 1]
+                        wood_needed = self.building_cost[self.sawmills_placed]
                 elif(action.building_type == BuildingType.WORKSHOP):
                     if(self.workshops_placed >= self.workshop_limit):
                         print("Out of workshops")
                         return False
                     else:
-                        wood_needed = self.building_cost[self.workshops_placed - 1]
+                        wood_needed = self.building_cost[self.workshops_placed]
                 elif(action.building_type == BuildingType.RECRUITER):
                     if(self.recruiters_placed >= self.recruiter_limit):
                         print("Out of recruiters")
                         return False
                     else:
-                        wood_needed = self.building_cost[self.recruiters_placed - 1]
+                        wood_needed = self.building_cost[self.recruiters_placed]
                 else:
                     return False
                 

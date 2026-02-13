@@ -53,10 +53,8 @@ class Game:
         if isinstance(action, EndPhaseAction):
             if(self.current_phase == TurnPhase.BIRDSONG):
                 self.current_phase = TurnPhase.DAYLIGHT
-                return False
             elif self.current_phase == TurnPhase.DAYLIGHT:
                 self.current_phase = TurnPhase.EVENING
-                return False
             elif self.current_phase == TurnPhase.EVENING:
                 self.current_phase = TurnPhase.BIRDSONG
 

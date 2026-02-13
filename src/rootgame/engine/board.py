@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 import random
 from rootgame.shared.shared_types import ClearingInfo
-from rootgame.engine.types import FactionName
+from rootgame.engine.types import FactionName, Suit
 from rootgame.engine.building import Building, BuildingType
 
 from enum import StrEnum, auto
@@ -21,10 +21,10 @@ AUTUMN_BOARD_EDGES = [
 ]
 
 AUTUMN_BOARD_SUITS = [
-    "fox", "rabbit", "mouse",
-    "rabbit", "mouse", "fox",
-    "mouse", "fox", "rabbit",
-    "fox", "mouse", "rabbit"
+    Suit.Fox, Suit.Rabbit, Suit.Mouse,
+    Suit.Rabbit, Suit.Mouse, Suit.Fox,
+    Suit.Mouse, Suit.Fox, Suit.Rabbit,
+    Suit.Fox, Suit.Mouse, Suit.Rabbit
 ]
 
 class Token(StrEnum):
@@ -37,7 +37,7 @@ class Clearing:
     buildings: list[Building] = field(default_factory=list)
     warriors: dict[FactionName, int] = field(default_factory=dict)
     tokens: dict[FactionName, list[Token]] = field(default_factory=dict)
-    suit: str = ""
+    suit: Suit | None = None
     ruler: FactionName | None = None
 
     def add_token(self, faction: FactionName, token: Token):
@@ -137,7 +137,7 @@ class Board:
         elif(building_type == BuildingType.ROOST):
             self.clearings[clearing_id].add_building(Building(type=building_type, owner=FactionName.EYRIE_DYNASTIES))
     
-    def get_building(self, building_type: BuildingType):
+    def get_buildings(self, building_type: BuildingType):
         buildings = []
         for clearing in self.clearings:
             for building in clearing.buildings:

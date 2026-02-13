@@ -68,11 +68,21 @@ def main():
                                 continue
                             building_map = {"SAWMILL": BuildingType.SAWMILL, "WORKSHOP": BuildingType.WORKSHOP, "RECRUITER": BuildingType.RECRUITER}
                             chosen_action = MarquiseBuildAction(int(clearing_id), building_map[building_name])
-                    elif(chosen_action.startswith("OVERWORK")):
-                        _, clearing_id, card_idx = chosen_action.split(" ")
-                        if(not (clearing_id.isdigit() and card_idx.isdigit())):
-                            continue
-                        chosen_action = MarquiseOverworkAction(int(clearing_id), int(card_idx))
+                        elif(chosen_action.startswith("OVERWORK")):
+                            _, clearing_id, card_idx = chosen_action.split(" ")
+                            if(not (clearing_id.isdigit() and card_idx.isdigit())):
+                                continue
+                            chosen_action = MarquiseOverworkAction(int(clearing_id), int(card_idx))
+                        elif(chosen_action.startswith("CRAFT")):
+                            print("creating craft action")
+                            if(not len(chosen_action.split(" ")) == 2):
+                                print("bad len")
+                                continue
+                            _, card_idx = chosen_action.split(" ")
+                            if(not card_idx.isdigit()):
+                                print("not digit")
+                                continue
+                            chosen_action = MarquiseCraftAction(card_idx=int(card_idx))
 
                     elif(player.faction.faction_name == "eyrie_dynasties"):
                         if(chosen_action.startswith("ADD TO DECREE")):
@@ -110,6 +120,16 @@ def main():
                             chosen_action = EyrieBuildAction(int(clearing_id))
                         elif(chosen_action.startswith("TURMOIL")):
                             chosen_action = EyrieTurmoilAction()
+                        elif(chosen_action.startswith("CRAFT")):
+                            print("creating craft action")
+                            if(not len(chosen_action.split(" ")) == 2):
+                                print("bad len")
+                                continue
+                            _, card_idx = chosen_action.split(" ")
+                            if(not card_idx.isdigit()):
+                                print("not digit")
+                                continue
+                            chosen_action = EyrieCraftAction(card_idx=int(card_idx))
 
                 game.apply_action(player, chosen_action)
             

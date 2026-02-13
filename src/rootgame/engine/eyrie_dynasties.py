@@ -3,8 +3,8 @@ from enum import StrEnum, auto
 from typing import ClassVar
 import random
 
-from rootgame.engine.actions import Action, DiscardCardAction, DrawCardAction, EndPhaseAction, EyrieAddToDecreeAction, EyrieBattleAction, EyrieMoveAction, EyrieRecruitAction, EyrieBuildAction, EyrieTurmoilAction
-from rootgame.engine.card import Card, VizierCard
+from rootgame.engine.actions import Action, DiscardCardAction, DrawCardAction, EndPhaseAction, EyrieAddToDecreeAction, EyrieBattleAction, EyrieMoveAction, EyrieRecruitAction, EyrieBuildAction, EyrieTurmoilAction, EyrieCraftAction
+from rootgame.engine.card import Card, VizierCard, ItemCard
 from rootgame.engine.faction import Faction
 from rootgame.engine.board import Board
 from rootgame.engine.building import BuildingType
@@ -89,6 +89,29 @@ class EyrieDynasties(Faction):
             
             # Can always turmoil during daylight (for now)
             if(isinstance(action, EyrieTurmoilAction)):
+                return True
+        
+            # Must do all crafting at start (first action, or following another craft actions)
+            if(isinstance(action, EyrieCraftAction)):
+                print("Validating craft")
+                if(action.card_idx >= len(player.hand) or action.card_idx < 0):
+                    print("Invalid card index")
+                    return False
+                if(not len(actions_taken) == 0):
+                    print(actions_taken)
+                    if(not isinstance(actions_taken[-1], EyrieCraftAction)):
+                        print("Not start of turn")
+                        return False
+                if(not isinstance(player.hand[action.card_idx], ItemCard)):
+                    print("Not item card")
+                    return False
+                
+                # Check if have enough unused workshops
+                card_to_craft: ItemCard = player.hand[action.card_idx]
+                if(not board.verify_crafting_requirements(building_type=BuildingType.ROOST, crafting_requirements=card_to_craft.crafting_requirements)):
+                    print("Not enough roosts")
+                    return False
+                
                 return True
             
             # If recruit actions left, must finish them
@@ -176,18 +199,25 @@ class EyrieDynasties(Faction):
             elif(isinstance(action, EyrieRecruitAction)):
                 board.clearings[action.clearing_id].add_warriors(FactionName.EYRIE_DYNASTIES, 1)
                 self.take_decree_action(board.clearings[action.clearing_id].suit, DecreeOption.Recruit)
+
             elif(isinstance(action, EyrieMoveAction)):
                 board.move_warriors(self.faction_name, action.num_warriors, action.source_clearing, action.destination_clearing)
                 self.take_decree_action(board.clearings[action.source_clearing].suit, DecreeOption.Move)
+
             elif(isinstance(action, EyrieBattleAction)):
                 board.battle(self.faction_name, action.defender.faction.faction_name, action.clearing_id)
                 self.take_decree_action(board.clearings[action.clearing_id].suit, DecreeOption.Battle)
+                
             elif(isinstance(action, EyrieBuildAction)):
                 board.build(action.clearing_id, BuildingType.ROOST)
                 self.take_decree_action(board.clearings[action.clearing_id].suit, DecreeOption.Build)
             
             elif(isinstance(action, EyrieTurmoilAction)):
                 self.turmoil()
+            
+            elif(isinstance(action, EyrieCraftAction)):
+                used_card: ItemCard = player.hand.pop(action.card_idx)
+                board.use_crafting_requirements(building_type=BuildingType.ROOST, crafting_requirements=used_card.crafting_requirements)
 
     def add_to_decree(self, card: Card, decree_option: DecreeOption):
         if decree_option not in self.decree:

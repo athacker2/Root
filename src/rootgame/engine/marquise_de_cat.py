@@ -5,7 +5,8 @@ from rootgame.engine.faction import Faction
 from rootgame.engine.player import Player
 from rootgame.engine.board import Board, Token, Clearing
 from rootgame.engine.building import Building, BuildingType
-from rootgame.engine.actions import Action, AddWoodToSawmillsAction, EndPhaseAction, MarchAction, MarquiseRecruitAction, MarquiseBuildAction, MarquiseOverworkAction, BattleAction, DrawCardAction, DiscardCardAction, MoveAction
+from rootgame.engine.actions import Action, AddWoodToSawmillsAction, EndPhaseAction, MarchAction, MarquiseRecruitAction, MarquiseBuildAction, MarquiseOverworkAction, BattleAction, DrawCardAction, DiscardCardAction, MoveAction, MarquiseCraftAction
+from rootgame.engine.card import ItemCard
 
 from rootgame.engine.types import FactionName, TurnPhase, MAX_HAND_SIZE
 
@@ -87,12 +88,36 @@ class MarquiseDeCat(Faction):
             return False
         
         elif(current_phase == TurnPhase.DAYLIGHT):
+
             # Check for max of 3 actions during daylight
-            if(len(actions_taken) >= 3 and not isinstance(action, EndPhaseAction)):
+            if(len([a for a in actions_taken if not isinstance(a, MarquiseCraftAction)]) >= 3 and not isinstance(action, EndPhaseAction)):
                 print("Can't take more than 3 actions")
                 return False
             
-            if(isinstance(action, BattleAction)):
+            # Must do all crafting at start (first action, or following another craft actions)
+            if(isinstance(action, MarquiseCraftAction)):
+                print("Validating craft")
+                if(action.card_idx >= len(player.hand) or action.card_idx < 0):
+                    print("Invalid card index")
+                    return False
+                if(not len(actions_taken) == 0):
+                    print(actions_taken)
+                    if(not isinstance(actions_taken[-1], MarquiseCraftAction)):
+                        print("Not start of turn")
+                        return False
+                if(not isinstance(player.hand[action.card_idx], ItemCard)):
+                    print("Not item card")
+                    return False
+                
+                # Check if have enough unused workshops
+                card_to_craft: ItemCard = player.hand[action.card_idx]
+                if(not board.verify_crafting_requirements(building_type=BuildingType.WORKSHOP, crafting_requirements=card_to_craft.crafting_requirements)):
+                    print("Not enough workshops")
+                    return False
+                
+                return True
+            
+            elif(isinstance(action, BattleAction)):
                 return board.can_battle(action.attacker.faction.faction_name, action.defender.faction.faction_name, action.clearing_id)
             
             elif(isinstance(action, MarchAction)):
@@ -216,6 +241,7 @@ class MarquiseDeCat(Faction):
             clearing_id = action.clearing_id
             defender = action.defender
             board.battle(self.faction_name, defender.faction.faction_name, clearing_id)
+
         elif isinstance(action, AddWoodToSawmillsAction):
             self.add_wood_to_sawmills(board)
         
@@ -230,6 +256,10 @@ class MarquiseDeCat(Faction):
         
         elif(isinstance(action, MarquiseOverworkAction)):
             self.overwork(board, action.clearing_id, player, action.card_idx)
+
+        elif(isinstance(action, MarquiseCraftAction)):
+            used_card: ItemCard = player.hand.pop(action.card_idx)
+            board.use_crafting_requirements(building_type=BuildingType.WORKSHOP, crafting_requirements=used_card.crafting_requirements)
     
     def add_wood_to_sawmills(self, board: Board):
         for clearing in board.clearings:

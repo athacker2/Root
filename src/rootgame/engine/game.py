@@ -32,7 +32,7 @@ class Game:
 
         self.deck = Deck()
         for player in self.players:
-            player.hand = self.deck.draw_card(3)  # Each player starts with 3 cards
+            player.hand = self.deck.draw_card(10)  # Each player starts with 3 cards
 
         self.board = Board()
         self.new_game_board_setup()
@@ -50,6 +50,7 @@ class Game:
         return player.faction.is_action_legal(action, self.current_phase, player, self.board, self.game_log.get_actions_for_turn_phase(self.round, self.current_phase))
             
     def apply_action(self, player: Player, action: Action):
+        self.game_log.log_action(self.round, player, self.current_phase, action)
         if isinstance(action, EndPhaseAction):
             if(self.current_phase == TurnPhase.BIRDSONG):
                 self.current_phase = TurnPhase.DAYLIGHT
@@ -68,8 +69,6 @@ class Game:
             self.discard_cards(player, action.card_ids)
         else:
             player.faction.apply_action(action, self.board, player)
-        
-        self.game_log.log_action(self.round, player, self.current_phase, action)
 
     def play_card(self, player: Player, card_idx: int):
         card = player.hand[card_idx]

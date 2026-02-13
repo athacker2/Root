@@ -4,7 +4,7 @@ from typing import ClassVar
 import random
 
 from rootgame.engine.actions import Action, DiscardCardAction, DrawCardAction, EndPhaseAction, EyrieAddToDecreeAction, EyrieBattleAction, EyrieMoveAction, EyrieRecruitAction, EyrieBuildAction, EyrieTurmoilAction
-from rootgame.engine.deck import Card
+from rootgame.engine.card import Card, VizierCard
 from rootgame.engine.faction import Faction
 from rootgame.engine.board import Board
 from rootgame.engine.building import BuildingType
@@ -225,7 +225,7 @@ class EyrieDynasties(Faction):
     
     def set_leader_viziers(self):
         for decree_option in LEADER_VIZIERS[self.leader]:
-            self.decree.setdefault(decree_option, []).append(Card("Vizier", Suit.Bird, 0))
+            self.decree.setdefault(decree_option, []).append(VizierCard())
 
     def turmoil(self):
         self.decree = {}

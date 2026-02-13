@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from typing import Optional
-from rootgame.engine.deck import Card
+from rootgame.engine.card import Card
 
 @dataclass
 class Player:

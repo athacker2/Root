@@ -152,6 +152,25 @@ class Board:
                 if building.type == building_type and not building.used:
                     buildings.append(building)
         return buildings
+    
+    def verify_crafting_requirements(self, building_type: BuildingType, crafting_requirements: list[Suit]):
+        # retrieve counts of suit -> unused buildings
+        unused_building_counts = {}
+        for clearing in self.clearings:
+            for building in clearing.buildings:
+                if building.type == building_type and building.used == False:
+                    unused_building_counts[clearing.suit] = unused_building_counts.get(clearing.suit, 0) + 1
+        
+        # compute crafting requirements as dict
+        requirements = {}
+        for suit in crafting_requirements:
+            unused_building_counts[clearing.suit] = unused_building_counts.get(clearing.suit, 0) + 1
+        
+        for suit_cnt in requirements:
+            if(unused_building_counts.get(suit, 0) < suit_cnt):
+                return False
+        return True
+
 
     def mark_all_buildings_unused(self):
         for clearing in self.clearings:

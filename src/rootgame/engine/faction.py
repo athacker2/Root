@@ -11,7 +11,7 @@ class Faction(Protocol):
     def board_setup(self, board: Board):
         ...
         
-    def get_legal_actions(self, turn_phase: TurnPhase, board: Board):
+    def get_legal_actions(self, turn_phase: TurnPhase:
         ...
     
     def is_action_legal(self, action: Action, current_phase: TurnPhase, player: Player, board: Board, actions_taken: list[Action]):

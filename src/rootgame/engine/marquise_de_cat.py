@@ -59,7 +59,7 @@ class MarquiseDeCat(Faction):
     def reset_state(self):
         pass
 
-    def get_legal_actions(self, turn_phase: TurnPhase, board: Board):
+    def get_legal_actions(self, turn_phase: TurnPhase):
         # Implement logic to return legal actions for Marquise de Cat based on the turn phase
         legal_actions = ["END PHASE"]
         if turn_phase == TurnPhase.BIRDSONG:

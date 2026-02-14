@@ -59,7 +59,7 @@ class EyrieDynasties(Faction):
     def reset_state(self):
         self.decree_actions_taken = {}
     
-    def get_legal_actions(self, turn_phase: TurnPhase, board: Board):
+    def get_legal_actions(self, turn_phase: TurnPhase):
          # Implement logic to return legal actions for Eyrie Dynasties based on the turn phase
         legal_actions = ["END PHASE"]
         if turn_phase == TurnPhase.BIRDSONG:
@@ -266,7 +266,7 @@ class EyrieDynasties(Faction):
         self.decree_actions_taken = {}
         self.used_leaders.append(self.leader)
 
-        if(len(self.used_leaders) == len(EyrieLeader)):
+        if(len(self.used_leaders) == len(list(EyrieLeader))):
             self.used_leaders = []
 
         leader_options = [leader for leader in EyrieLeader if leader not in self.used_leaders]

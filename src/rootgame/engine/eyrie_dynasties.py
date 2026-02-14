@@ -131,7 +131,7 @@ class EyrieDynasties(Faction):
 
                 for (suit, req_cnt) in card_to_craft.crafting_requirements.items():
                     if(suit == Suit.Bird): continue
-                    if(unused_roost_cnts.get(suit, 0) < req_cnt):
+                    if(unused_roots_by_suit.get(suit, 0) < req_cnt):
                         print(f"Not enough roosts of suit {suit}")
                         return False
                 
@@ -157,7 +157,7 @@ class EyrieDynasties(Faction):
                 if(isinstance(action, EyrieMoveAction)):
                     if(not board.can_move(self.faction_name, action.num_warriors, action.source_clearing, action.destination_clearing)):
                         return False
-                    if(not self.suit_exists_in_decree_option(DecreeOption.Move, board.get_clearing_suit(action.clearing_id))):
+                    if(not self.suit_exists_in_decree_option(DecreeOption.Move, board.get_clearing_suit(action.source_clearing))):
                         return False
                     return True
                 return False
@@ -268,6 +268,7 @@ class EyrieDynasties(Faction):
         for card in remaining_cards:
             if(card.suit == suit or card.suit == Suit.Bird):
                 return True
+        return False
     
     def set_leader_viziers(self):
         for decree_option in LEADER_VIZIERS[self.leader]:

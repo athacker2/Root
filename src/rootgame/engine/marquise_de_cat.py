@@ -121,7 +121,7 @@ class MarquiseDeCat(Faction):
 
                 for (suit, req_cnt) in card_to_craft.crafting_requirements.items():
                     if(suit == Suit.Bird): continue
-                    if(unused_workshop_cnts.get(suit, 0) < req_cnt):
+                    if(unused_workshops_by_suit.get(suit, 0) < req_cnt):
                         print(f"Not enough workshops of suit {suit}")
                         return False
                 
@@ -207,7 +207,7 @@ class MarquiseDeCat(Faction):
                 if(player.hand[action.card_idx].suit != board.get_clearing_suit(action.clearing_id)):
                     print("Invalid card. Suit doesn't match")
                     return False
-                if(board.clearing_has_building(clearing_id=action.clearing_id, building_type=BuildingType.SAWMILL)):
+                if(not board.clearing_has_building(clearing_id=action.clearing_id, building_type=BuildingType.SAWMILL)):
                     print("No sawmill at clearing")
                     return False
                 if(self.wood_placed == self.wood_limit):
@@ -291,7 +291,7 @@ class MarquiseDeCat(Faction):
                 if building.type is BuildingType.SAWMILL and self.wood_placed < self.wood_limit:
                     building.used = True
                     clearing.add_token(token=Token.WOOD, owner=self.faction_name)
-                    self.warriors_placed += 1
+                    self.wood_placed += 1
     
     def find_wood_in_connected_ruled_clearings(self, board: Board, clearing_id: int) -> list[Clearing]:
         search_q = [board.clearings[clearing_id]]

@@ -3,7 +3,7 @@ from enum import StrEnum, auto
 from typing import ClassVar
 import random
 
-from rootgame.engine.actions import Action, DiscardCardAction, DrawCardAction, EndPhaseAction, EyrieAddToDecreeAction, EyrieBattleAction, EyrieMoveAction, EyrieRecruitAction, EyrieBuildAction, EyrieTurmoilAction, EyrieCraftAction
+from rootgame.engine.actions import Action, DiscardCardAction, DrawCardAction, BattleAction, EndPhaseAction, EyrieAddToDecreeAction, EyrieMoveAction, EyrieRecruitAction, EyrieBuildAction, EyrieTurmoilAction, EyrieCraftAction
 from rootgame.engine.card import Card, VizierCard, ItemCard
 from rootgame.engine.faction import Faction
 from rootgame.engine.board import Board
@@ -163,7 +163,7 @@ class EyrieDynasties(Faction):
                 return False
             
             elif(not self.resolved_decree_option(DecreeOption.Battle)):
-                if(isinstance(action, EyrieBattleAction)):
+                if(isinstance(action, BattleAction)):
                     if(not board.can_battle(self.faction_name, action.defender.faction.faction_name, action.clearing_id)):
                         return False
                     if(not self.suit_exists_in_decree_option(DecreeOption.Battle, board.clearings[action.clearing_id].suit)):
@@ -220,7 +220,7 @@ class EyrieDynasties(Faction):
                 board.move_warriors(self.faction_name, action.num_warriors, action.source_clearing, action.destination_clearing)
                 self.take_decree_action(board.clearings[action.source_clearing].suit, DecreeOption.Move)
 
-            elif(isinstance(action, EyrieBattleAction)):
+            elif(isinstance(action, BattleAction)):
                 board.battle(self.faction_name, action.defender.faction.faction_name, action.clearing_id)
                 self.take_decree_action(board.clearings[action.clearing_id].suit, DecreeOption.Battle)
                 

@@ -83,12 +83,6 @@ class EyrieMoveAction(Action):
     num_warriors: int
     source_clearing: int
     destination_clearing: int
-    
-@dataclass 
-class EyrieBattleAction(Action):
-    clearing_id: int
-    attacker: Player
-    defender: Player
 
 @dataclass 
 class EyrieBuildAction(Action):

@@ -2,6 +2,7 @@ from rootgame.engine.game import Game
 from rootgame.cli.map_renderer import make_renderer
 from rootgame.shared.shared_types import *
 from rootgame.engine.actions import *
+from rootgame.engine.types import FactionName
 
 def main():
     game = Game()
@@ -45,7 +46,7 @@ def main():
                         continue
                     chosen_action = DiscardCardAction([int(idx) for idx in card_idxs])
 
-                elif(game.current_player.faction.faction_name == "marquise_de_cat"):
+                elif(game.current_player.faction.faction_name == FactionName.MARQUISE_DE_CAT):
                     if(chosen_action.startswith("RECRUIT")):
                         chosen_action = MarquiseRecruitAction()
                     elif(chosen_action.startswith("BATTLE")):
@@ -83,7 +84,7 @@ def main():
                             continue
                         chosen_action = MarquiseCraftAction(card_idx=int(card_idx))
 
-                elif(game.current_player.faction.faction_name == "eyrie_dynasties"):
+                elif(game.current_player.faction.faction_name == FactionName.EYRIE_DYNASTIES):
                     if(chosen_action.startswith("ADD TO DECREE")):
                         _, _, _, card_idx, option = chosen_action.split(" ")
                         if(not card_idx.isdigit()):

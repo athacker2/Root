@@ -27,6 +27,13 @@ AUTUMN_BOARD_SUITS = [
     Suit.Fox, Suit.Mouse, Suit.Rabbit
 ]
 
+AUTUMN_BOARD_BUILDING_LIMITS = [
+    1, 2, 2,
+    2, 2, 2,
+    3, 2, 1,
+    2, 2, 1
+]
+
 class Token(StrEnum):
     KEEP = auto()
     WOOD = auto()
@@ -35,36 +42,62 @@ class Token(StrEnum):
 class Clearing:
     adjacentClearings: list[int] = field(default_factory=list)
     buildings: list[Building] = field(default_factory=list)
+    building_limit: int = 0
     warriors: dict[FactionName, int] = field(default_factory=dict)
     tokens: dict[FactionName, list[Token]] = field(default_factory=dict)
     suit: Suit | None = None
     ruler: FactionName | None = None
 
-    def add_token(self, faction: FactionName, token: Token):
-        self.tokens.setdefault(faction, []).append(token)
+    # Clearing Methods
+    def is_adjacent(self, other_clearing_id: int):
+        return other_clearing_id in self.adjacentClearings
     
-    def add_warriors(self, faction: FactionName, count: int = 1):
+    # Building Methods
+    def add_building(self, building: Building) -> bool:
+        if(len(self.buildings) == self.building_limit):
+            return False
+        
+        self.buildings.append(building)
+        self.update_ruler()
+        return True
+    
+    def get_buildings(self) -> list[Building]:
+        return self.buildings
+    
+    def has_building(self, building_type: BuildingType) -> bool:
+        return any(building.type == building_type for building in self.buildings)
+
+    def can_build(self):
+        return len(self.buildings) < self.building_limit
+    
+    def use_building(self, building_type: BuildingType) -> bool:
+        if(not self.has_building(building_type=building_type)):
+            return False
+        
+        for building in self.buildings:
+            if building.type == building_type and building.used == False:
+                building.used = True
+                return True
+        return False
+        
+    # Warrior Methods
+    def add_warriors(self, faction: FactionName, count: int):
         self.warriors[faction] = self.warriors.get(faction, 0) + count
         self.update_ruler()
     
     def get_warrior_count(self, faction: FactionName):
         return self.warriors.get(faction, 0)
-    
-    def remove_warriors(self, faction: FactionName, count: int = 1):
-        if self.warriors.get(faction, 0) >= count:
-            self.warriors[faction] = max(0, self.warriors[faction] - count)
-        self.update_ruler()
 
-    def add_building(self, building: Building):
-        self.buildings.append(building)
+    def remove_warriors(self, faction: FactionName, count: int):
+        to_remove = min(count, self.warriors.get(faction, 0))
+        self.warriors[faction] = self.warriors.get(faction, 0) - to_remove
         self.update_ruler()
     
-    def has_building(self, building_type: BuildingType):
-        return any(building.type == building_type for building in self.buildings)
+    # Token Methods
+    def add_token(self, token: Token, owner: FactionName):
+        self.tokens.setdefault(owner, []).append(token)
     
-    def is_adjacent(self, other_clearing_id: int):
-        return other_clearing_id in self.adjacentClearings
-    
+    # Ruler Methods
     def update_ruler(self):
         if not self.warriors and not self.buildings:
             self.ruler = None
@@ -84,29 +117,65 @@ class Board:
     clearings: list[Clearing]
 
     def __init__(self):
-        self.clearings = [Clearing() for _ in range(12)]
+        self.clearings = [Clearing() for _ in range(len(AUTUMN_BOARD_SUITS))]
 
         for edge in AUTUMN_BOARD_EDGES:
             self.clearings[edge[0]].adjacentClearings.append(edge[1])
             self.clearings[edge[1]].adjacentClearings.append(edge[0])
+        
+        for (id, building_limit) in enumerate(AUTUMN_BOARD_BUILDING_LIMITS):
+            self.clearings[id].building_limit = building_limit
 
         for (id, clearing) in enumerate(self.clearings):
             clearing.suit = AUTUMN_BOARD_SUITS[id]
     
-    def export_clearing_info(self):
-        clearing_info: dict[int, ClearingInfo] = {}
-
+    # Clearing
+    def is_valid_clearing(self, clearing_id: int):
+        return clearing_id >= 0 and clearing_id < len(self.clearings)
+    
+    def get_clearing_suit(self, clearing_id: int):
+        if(self.is_valid_clearing(clearing_id=clearing_id)):
+            return self.clearings[clearing_id].suit
+    
+    def get_clearing_ruler(self, clearing_id: int):
+        if(self.is_valid_clearing(clearing_id=clearing_id)):
+            return self.clearings[clearing_id].ruler
+    
+    # Building Operations
+    def build(self, clearing_id: int, building_type: BuildingType, owner: FactionName):
+        if(self.is_valid_clearing(clearing_id=clearing_id) and self.clearings[clearing_id].can_build()):
+            self.clearings[clearing_id].add_building(Building(type=building_type, owner=owner))
+    
+    def clearing_has_building(self, clearing_id: int, building_type: BuildingType) -> bool:
+        if(self.is_valid_clearing(clearing_id=clearing_id)):
+            return self.clearings[clearing_id].has_building(building_type=building_type)
+    
+    def mark_all_buildings_unused(self):
+        for clearing in self.clearings:
+            for building in clearing.buildings:
+                building.used = False
+    
+    def get_unused_buildings_of_type(self, building_type: BuildingType):
+        unused_buildings: dict[int, int] = {}
         for (id, clearing) in enumerate(self.clearings):
-            clearing_info[id] = ClearingInfo()
-            clearing_info[id].tiles = [building.type for building in clearing.buildings]
-            clearing_info[id].warriors = {key[0].upper(): value for (key, value) in clearing.warriors.items()}
-            clearing_info[id].tokens = {key[0].upper(): value for (key, value) in clearing.tokens.items()}
-            clearing_info[id].suit = clearing.suit
+            for building in clearing.get_buildings():
+                if(building.type == building_type):
+                    unused_buildings[id] = unused_buildings.setdefault(id, 0) + 1
+        return unused_buildings
+    
+    def use_building_at_clearing(self, clearing_id: int, building_type: BuildingType):
+        if(self.is_valid_clearing(clearing_id=clearing_id) and self.clearings[clearing_id].has_building(building_type=building_type)):
+            self.clearings[clearing_id].use_building(building_type)
+    
+    # Warrior Operations
+    def add_warriors_at_clearing(self, clearing_id: int, faction: FactionName, num_warriors: int):
+        if(self.is_valid_clearing(clearing_id=clearing_id)):
+            self.clearings[clearing_id].add_warriors(faction=faction, count=num_warriors)
 
-        return clearing_info
-
-    def get_edges(self):
-        return AUTUMN_BOARD_EDGES
+    def move_warriors(self, faction: FactionName, numWarriors: int, source_clearing: int, dest_clearing: int):
+        if(self.is_valid_clearing(clearing_id=source_clearing) and self.is_valid_clearing(clearing_id=dest_clearing)):
+            self.clearings[source_clearing].remove_warriors(faction, numWarriors)
+            self.clearings[dest_clearing].add_warriors(faction, numWarriors)
     
     def can_move(self, faction: FactionName, numWarriors: int, source_clearing: int, dest_clearing: int):
         if(not self.is_valid_clearing(source_clearing) or not self.is_valid_clearing(dest_clearing)):
@@ -126,75 +195,6 @@ class Board:
             return False
         
         return True
-    
-    def move_warriors(self, faction: FactionName, numWarriors: int, startClearing: int, endClearing: int):
-        self.clearings[startClearing].remove_warriors(faction, numWarriors)
-        self.clearings[endClearing].add_warriors(faction, numWarriors)
-    
-    def build(self, clearing_id: int, building_type: BuildingType):
-        if(building_type == BuildingType.SAWMILL or building_type == BuildingType.RECRUITER or building_type == BuildingType.WORKSHOP):
-            self.clearings[clearing_id].add_building(Building(type=building_type, owner=FactionName.MARQUISE_DE_CAT))
-        elif(building_type == BuildingType.ROOST):
-            self.clearings[clearing_id].add_building(Building(type=building_type, owner=FactionName.EYRIE_DYNASTIES))
-    
-    def get_buildings(self, building_type: BuildingType):
-        buildings = []
-        for clearing in self.clearings:
-            for building in clearing.buildings:
-                if building.type == building_type:
-                    buildings.append(building)
-        return buildings
-    
-    def get_unused_buildings(self, building_type: BuildingType):
-        buildings = []
-        for clearing in self.clearings:
-            for building in clearing.buildings:
-                if building.type == building_type and not building.used:
-                    buildings.append(building)
-        return buildings
-    
-    def verify_crafting_requirements(self, building_type: BuildingType, crafting_requirements: list[Suit]):
-        # compute crafting requirements as dict
-        requirements = {}
-        for suit in crafting_requirements:
-            requirements[suit] = requirements.get(suit, 0) + 1
-
-        # retrieve counts of suit -> unused buildings
-        unused_building_counts = {}
-        for clearing in self.clearings:
-            for building in clearing.buildings:
-                if building.type == building_type and building.used == False:
-                    unused_building_counts[clearing.suit] = unused_building_counts.get(clearing.suit, 0) + 1
-        
-        for suit, cnt in requirements.items():
-            if(unused_building_counts.get(suit, 0) < cnt):
-                return False
-        return True
-    
-    def use_crafting_requirements(self, building_type: BuildingType, crafting_requirements: list[Suit]):
-        # compute crafting requirements as dict
-        requirements = {}
-        for suit in crafting_requirements:
-            requirements[suit] = requirements.get(suit, 0) + 1
-
-        # retrieve counts of suit -> unused buildings
-        unused_buildings = {}
-        for clearing in self.clearings:
-            for building in clearing.buildings:
-                if building.type == building_type and building.used == False:
-                    unused_buildings.setdefault(clearing.suit, []).append(building)
-        
-        for suit, cnt in requirements.items():
-            for i in range(cnt):
-                unused_buildings[suit][i].used = True
-
-    def mark_all_buildings_unused(self):
-        for clearing in self.clearings:
-            for building in clearing.buildings:
-                building.used = False
-    
-    def is_valid_clearing(self, clearing_id: int):
-        return clearing_id >= 0 and clearing_id < len(self.clearings)
     
     def can_battle(self, attacker: FactionName, defender: FactionName, clearing_id: int):
         if(not self.is_valid_clearing(clearing_id)):
@@ -220,3 +220,24 @@ class Board:
 
         battle_clearing.remove_warriors(attacker, defense_hits)
         battle_clearing.remove_warriors(defender, attack_hits)
+    
+    # Token Operations
+    def add_token_at_clearing(self, clearing_id: int, token: Token, owner: FactionName):
+        if(self.is_valid_clearing(clearing_id=clearing_id)):
+            self.clearings[clearing_id].add_token(token=token, owner=owner)
+    
+    # Misc Operations
+    def export_clearing_info(self):
+        clearing_info: dict[int, ClearingInfo] = {}
+
+        for (id, clearing) in enumerate(self.clearings):
+            clearing_info[id] = ClearingInfo()
+            clearing_info[id].tiles = [building.type for building in clearing.buildings]
+            clearing_info[id].warriors = {key[0].upper(): value for (key, value) in clearing.warriors.items()}
+            clearing_info[id].tokens = {key[0].upper(): value for (key, value) in clearing.tokens.items()}
+            clearing_info[id].suit = clearing.suit
+
+        return clearing_info
+
+    def get_edges(self):
+        return AUTUMN_BOARD_EDGES

@@ -8,7 +8,7 @@ from rootgame.engine.building import Building, BuildingType
 from rootgame.engine.actions import Action, AddWoodToSawmillsAction, EndPhaseAction, MarchAction, MarquiseRecruitAction, MarquiseBuildAction, MarquiseOverworkAction, BattleAction, DrawCardAction, DiscardCardAction, MoveAction, MarquiseCraftAction
 from rootgame.engine.card import ItemCard
 
-from rootgame.engine.types import FactionName, TurnPhase, MAX_HAND_SIZE
+from rootgame.engine.types import FactionName, TurnPhase, Suit, MAX_HAND_SIZE
 
 @dataclass
 class MarquiseDeCat(Faction):
@@ -36,7 +36,7 @@ class MarquiseDeCat(Faction):
 
     def board_setup(self, board: Board):
         # Place keep in top left clearing (TO CHANGE W/INTERACTIVE SETUP)
-        board.clearings[0].add_token(FactionName.MARQUISE_DE_CAT, Token.KEEP)
+        board.add_token_at_clearing(clearing_id=0, token=Token.KEEP, owner=self.faction_name)
 
         # Place one of each building in clearings adjacent to keep
         self.build(board, 4, BuildingType.WORKSHOP)
@@ -100,11 +100,24 @@ class MarquiseDeCat(Faction):
                     print("Not item card")
                     return False
                 
-                # Check if have enough unused workshops
+                # Check if there are enough unused workshops
                 card_to_craft: ItemCard = player.hand[action.card_idx]
-                if(not board.verify_crafting_requirements(building_type=BuildingType.WORKSHOP, crafting_requirements=card_to_craft.crafting_requirements)):
+                unused_workshop_cnts = board.get_unused_buildings_of_type(building_type=BuildingType.WORKSHOP)
+
+                if(sum(card_to_craft.crafting_requirements.values()) > sum(unused_workshop_cnts.values())):
                     print("Not enough workshops")
                     return False
+
+                unused_workshops_by_suit = {}
+                for (clearing_id, workshop_cnt) in unused_workshop_cnts.items():
+                    clearing_suit = board.get_clearing_suit(clearing_id=clearing_id)
+                    unused_workshops_by_suit[clearing_suit] = unused_workshops_by_suit.get(clearing_suit, 0) + workshop_cnt
+
+                for (suit, req_cnt) in card_to_craft.crafting_requirements.items():
+                    if(suit == Suit.Bird): continue
+                    if(unused_workshop_cnts.get(suit, 0) < req_cnt):
+                        print(f"Not enough workshops of suit {suit}")
+                        return False
                 
                 return True
             
@@ -185,10 +198,10 @@ class MarquiseDeCat(Faction):
                 if(board.is_valid_clearing(action.clearing_id) == False):
                     print("Invalid clearing")
                     return False
-                if(player.hand[action.card_idx].suit != board.clearings[action.clearing_id].suit):
+                if(player.hand[action.card_idx].suit != board.get_clearing_suit(action.clearing_id)):
                     print("Invalid card. Suit doesn't match")
                     return False
-                if(len(board.get_buildings(BuildingType.SAWMILL)) == 0):
+                if(board.clearing_has_building(clearing_id=action.clearing_id, building_type=BuildingType.SAWMILL)):
                     print("No sawmill at clearing")
                     return False
                 return True
@@ -243,28 +256,31 @@ class MarquiseDeCat(Faction):
 
         elif(isinstance(action, MarquiseCraftAction)):
             used_card: ItemCard = player.hand.pop(action.card_idx)
-            board.use_crafting_requirements(building_type=BuildingType.WORKSHOP, crafting_requirements=used_card.crafting_requirements)
+            self.craft(card=used_card, board=board)
     
     def add_wood_to_sawmills(self, board: Board):
         for clearing in board.clearings:
             for building in clearing.buildings:
                 if building.type is BuildingType.SAWMILL:
                     building.used = True
-                    clearing.add_token(self.faction_name, Token.WOOD)
+                    clearing.add_token(token=Token.WOOD, owner=self.faction_name)
     
     def find_wood_in_connected_ruled_clearings(self, board: Board, clearing_id: int) -> list[Clearing]:
         search_q = [board.clearings[clearing_id]]
         searched_clearings = set([clearing_id])
         clearings_with_wood = []
         while(len(search_q)):
-            curr = search_q.pop()
-            if(Token.WOOD in curr.tokens.get(FactionName.MARQUISE_DE_CAT, [])):
-                clearings_with_wood.append(curr)
+            curr_clearing = search_q.pop()
+            # print(curr_clearing)
+            if(Token.WOOD in curr_clearing.tokens.get(FactionName.MARQUISE_DE_CAT, [])):
+                clearings_with_wood.append(curr_clearing)
             
             # Check adj clearings that you rule
-            for id in curr.adjacentClearings:
+            for id in curr_clearing.adjacentClearings:
                 adj_clearing = board.clearings[id]
+                print(id)
                 if(adj_clearing.ruler == FactionName.MARQUISE_DE_CAT and id not in searched_clearings):
+                    # print(f"will search {id}")
                     search_q.append(adj_clearing)
                     searched_clearings.add(id)
         
@@ -301,7 +317,7 @@ class MarquiseDeCat(Faction):
                 wood_needed -= 1
         
         # Add building to target clearing
-        board.build(clearing_id, building_type)
+        board.build(clearing_id=clearing_id, building_type=building_type, owner=self.faction_name)
 
         if(building_type is BuildingType.SAWMILL):
             self.sawmills_placed += 1
@@ -315,4 +331,24 @@ class MarquiseDeCat(Faction):
         player.hand.pop(card_idx)  # Remove the card from player's hand
 
         # Add wood to sawmill at clearing
-        board.clearings[clearing_id].add_token(self.faction_name, Token.WOOD)
+        board.add_token_at_clearing(clearing_id=clearing_id, token=Token.WOOD, owner=self.faction_name)
+    
+    def craft(self, card: ItemCard, board: Board):
+        unused_workshops = board.get_unused_buildings_of_type(building_type=BuildingType.WORKSHOP)
+        crafting_requirements = card.crafting_requirements.copy()
+
+        for (clearing_id, workshop_cnt) in unused_workshops.items():
+            clearing_suit = board.get_clearing_suit(clearing_id=clearing_id)
+            for _ in range(min(workshop_cnt, crafting_requirements.get(clearing_suit, 0))):
+                board.use_building_at_clearing(clearing_id=clearing_id, building_type=BuildingType.WORKSHOP)
+                crafting_requirements[clearing_suit] -= 1
+                unused_workshops[clearing_id] -= 1
+        
+        # Handle wild requirements
+        for(clearing_id, workshop_cnt) in unused_workshops.items():
+            if(crafting_requirements.get(Suit.Bird, 0) == 0):
+                break
+            while(not crafting_requirements.get(Suit.Bird, 0) == 0):
+                board.use_building_at_clearing(clearing_id=clearing_id, building_type=BuildingType.WORKSHOP)
+                crafting_requirements[Suit.Bird] -= 1
+                unused_workshops[clearing_id] -= 1

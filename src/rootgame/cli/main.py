@@ -45,14 +45,24 @@ def main():
                     if(not all(idx.isdigit() for idx in card_idxs)):
                         continue
                     chosen_action = DiscardCardAction([int(idx) for idx in card_idxs])
+                elif(chosen_action.startswith("BATTLE")):
+                    if(not len(chosen_action.split(" ")) == 3):
+                        continue
+                    
+                    player_map = {
+                        "E": [player for player in game.players if player.faction.faction_name == FactionName.EYRIE_DYNASTIES][0], 
+                        "M": [player for player in game.players if player.faction.faction_name == FactionName.MARQUISE_DE_CAT][0]
+                        }
+                    _, clearing_id, defender = chosen_action.split(" ")
+                    if(not clearing_id.isdigit()):
+                            continue
+                    if(not defender in player_map.keys()):
+                        continue
+                    chosen_action = BattleAction(int(clearing_id), game.current_player, player_map[defender])
 
                 elif(game.current_player.faction.faction_name == FactionName.MARQUISE_DE_CAT):
                     if(chosen_action.startswith("RECRUIT")):
                         chosen_action = MarquiseRecruitAction()
-                    elif(chosen_action.startswith("BATTLE")):
-                        player_map = {"E": game.players[0], "M": game.players[1]}
-                        _, clearing_id, defender = chosen_action.split(" ")
-                        chosen_action = BattleAction(int(clearing_id), game.current_player, player_map[defender])
                     elif(chosen_action.startswith("ADD WOOD")):
                         chosen_action = AddWoodToSawmillsAction()
                     elif(chosen_action.startswith("MARCH")):
@@ -103,16 +113,6 @@ def main():
                         if(not num_units.isdigit() or not src.isdigit() or not dest.isdigit()):
                             continue
                         chosen_action = EyrieMoveAction(int(num_units), int(src), int(dest))
-                    elif(chosen_action.startswith("BATTLE")):
-                        if(not len(chosen_action.split(" ") == 3)):
-                            continue
-                        player_map = {"E": game.players[0], "M": game.players[1]}
-                        _, clearing_id, defender = chosen_action.split(" ")
-                        if(not clearing_id.isdigit()):
-                            continue
-                        if(not defender in player_map.keys()):
-                            continue
-                        chosen_action = EyrieBattleAction(int(clearing_id), game.current_player, player_map[defender])
                     elif(chosen_action.startswith("BUILD")):
                         _, clearing_id = chosen_action.split(" ")
                         if(not clearing_id.isdigit()):

@@ -3,7 +3,7 @@ from enum import StrEnum, auto
 from typing import ClassVar
 import random
 
-from rootgame.engine.actions import Action, DiscardCardAction, DrawCardAction, EndPhaseAction, EyrieAddToDecreeAction, EyrieBattleAction, EyrieMoveAction, EyrieRecruitAction, EyrieBuildAction, EyrieTurmoilAction, EyrieCraftAction
+from rootgame.engine.actions import Action, DiscardCardAction, DrawCardAction, BattleAction, EndPhaseAction, EyrieAddToDecreeAction, EyrieMoveAction, EyrieRecruitAction, EyrieBuildAction, EyrieTurmoilAction, EyrieCraftAction
 from rootgame.engine.card import Card, VizierCard, ItemCard
 from rootgame.engine.faction import Faction
 from rootgame.engine.board import Board
@@ -40,11 +40,10 @@ class EyrieDynasties(Faction):
 
     def board_setup(self, board: Board):
         # Place roost in bottom right
-        board.build(11, BuildingType.ROOST)
-        self.roosts_placed += 1
+        self.build(board=board, clearing_id=11, building_type=BuildingType.ROOST)
 
         # Place 6 warriors in starting clearing
-        board.clearings[11].add_warriors(FactionName.EYRIE_DYNASTIES, 6)
+        board.add_warriors_at_clearing(clearing_id=11, faction=self.faction_name, num_warriors=6)
         self.warriors_placed += 6
 
         # Set decree based on leader
@@ -117,11 +116,24 @@ class EyrieDynasties(Faction):
                     print("Not item card")
                     return False
                 
-                # Check if have enough unused workshops
+                # Check if there are enough unused roosts
                 card_to_craft: ItemCard = player.hand[action.card_idx]
-                if(not board.verify_crafting_requirements(building_type=BuildingType.ROOST, crafting_requirements=card_to_craft.crafting_requirements)):
+                unused_roost_cnts = board.get_unused_buildings_of_type(building_type=BuildingType.ROOST)
+
+                if(sum(card_to_craft.crafting_requirements.values()) > sum(unused_roost_cnts.values())):
                     print("Not enough roosts")
                     return False
+
+                unused_roots_by_suit = {}
+                for (clearing_id, roost_cnt) in unused_roost_cnts.items():
+                    clearing_suit = board.get_clearing_suit(clearing_id=clearing_id)
+                    unused_roots_by_suit[clearing_suit] = unused_roots_by_suit.get(clearing_suit, 0) + roost_cnt
+
+                for (suit, req_cnt) in card_to_craft.crafting_requirements.items():
+                    if(suit == Suit.Bird): continue
+                    if(unused_roost_cnts.get(suit, 0) < req_cnt):
+                        print(f"Not enough roosts of suit {suit}")
+                        return False
                 
                 return True
             
@@ -132,9 +144,9 @@ class EyrieDynasties(Faction):
                         return False
                     if(DecreeOption.Recruit not in self.decree or len(self.decree.get(DecreeOption.Recruit, [])) == 0):
                         return False
-                    if(not self.suit_exists_in_decree_option(DecreeOption.Recruit, board.clearings[action.clearing_id].suit)):
+                    if(not self.suit_exists_in_decree_option(DecreeOption.Recruit, board.get_clearing_suit(action.clearing_id))):
                         return False
-                    if(not board.clearings[action.clearing_id].has_building(BuildingType.ROOST)):
+                    if(not board.clearing_has_building(clearing_id=action.clearing_id, building_type=BuildingType.ROOST)):
                         return False
                     if(self.warriors_placed == self.warrior_limit):
                         return False
@@ -145,27 +157,27 @@ class EyrieDynasties(Faction):
                 if(isinstance(action, EyrieMoveAction)):
                     if(not board.can_move(self.faction_name, action.num_warriors, action.source_clearing, action.destination_clearing)):
                         return False
-                    if(not self.suit_exists_in_decree_option(DecreeOption.Move, board.clearings[action.source_clearing].suit)):
+                    if(not self.suit_exists_in_decree_option(DecreeOption.Move, board.get_clearing_suit(action.clearing_id))):
                         return False
                     return True
                 return False
             
             elif(not self.resolved_decree_option(DecreeOption.Battle)):
-                if(isinstance(action, EyrieBattleAction)):
+                if(isinstance(action, BattleAction)):
                     if(not board.can_battle(self.faction_name, action.defender.faction.faction_name, action.clearing_id)):
                         return False
-                    if(not self.suit_exists_in_decree_option(DecreeOption.Battle, board.clearings[action.clearing_id].suit)):
+                    if(not self.suit_exists_in_decree_option(DecreeOption.Battle, board.get_clearing_suit(action.clearing_id))):
                         return False
                     return True
                 return False
             
             elif(not self.resolved_decree_option(DecreeOption.Build)):
                 if(isinstance(action, EyrieBuildAction)):
-                    if(not self.suit_exists_in_decree_option(DecreeOption.Build, board.clearings[action.clearing_id].suit)):
+                    if(not self.suit_exists_in_decree_option(DecreeOption.Build, board.get_clearing_suit(action.clearing_id))):
                         return False
-                    if(not board.clearings[action.clearing_id].ruler == self.faction_name):
+                    if(not board.get_clearing_ruler(action.clearing_id) == self.faction_name):
                         return False
-                    if(board.clearings[action.clearing_id].has_building(BuildingType.ROOST)):
+                    if(board.clearing_has_building(clearing_id=action.clearing_id, building_type=BuildingType.ROOST)):
                         return False
                     if(self.roosts_placed == self.roost_limit):
                         return False
@@ -201,27 +213,27 @@ class EyrieDynasties(Faction):
                 player.hand.pop(action.card_id)
 
             elif(isinstance(action, EyrieRecruitAction)):
-                board.clearings[action.clearing_id].add_warriors(FactionName.EYRIE_DYNASTIES, 1)
-                self.take_decree_action(board.clearings[action.clearing_id].suit, DecreeOption.Recruit)
+                board.add_warriors_at_clearing(clearing_id=action.clearing_id, faction=self.faction_name, num_warriors=1)
+                self.take_decree_action(board.get_clearing_suit(action.clearing_id), DecreeOption.Recruit)
 
             elif(isinstance(action, EyrieMoveAction)):
                 board.move_warriors(self.faction_name, action.num_warriors, action.source_clearing, action.destination_clearing)
-                self.take_decree_action(board.clearings[action.source_clearing].suit, DecreeOption.Move)
+                self.take_decree_action(board.get_clearing_suit(action.clearing_id), DecreeOption.Move)
 
-            elif(isinstance(action, EyrieBattleAction)):
+            elif(isinstance(action, BattleAction)):
                 board.battle(self.faction_name, action.defender.faction.faction_name, action.clearing_id)
-                self.take_decree_action(board.clearings[action.clearing_id].suit, DecreeOption.Battle)
+                self.take_decree_action(board.get_clearing_suit(action.clearing_id), DecreeOption.Battle)
                 
             elif(isinstance(action, EyrieBuildAction)):
-                board.build(action.clearing_id, BuildingType.ROOST)
-                self.take_decree_action(board.clearings[action.clearing_id].suit, DecreeOption.Build)
+                self.build(board=board, clearing_id=action.clearing_id, building_type=BuildingType.ROOST)
+                self.take_decree_action(board.get_clearing_suit(action.clearing_id), DecreeOption.Build)
             
             elif(isinstance(action, EyrieTurmoilAction)):
                 self.turmoil()
             
             elif(isinstance(action, EyrieCraftAction)):
                 used_card: ItemCard = player.hand.pop(action.card_idx)
-                board.use_crafting_requirements(building_type=BuildingType.ROOST, crafting_requirements=used_card.crafting_requirements)
+                self.craft(card=used_card, board=board)
 
     def add_to_decree(self, card: Card, decree_option: DecreeOption):
         if decree_option not in self.decree:
@@ -273,5 +285,30 @@ class EyrieDynasties(Faction):
         self.leader = random.choice(leader_options)
         self.set_leader_viziers()
     
+    def craft(self, card: ItemCard, board: Board):
+        unused_roosts = board.get_unused_buildings_of_type(building_type=BuildingType.ROOST)
+        crafting_requirements = card.crafting_requirements.copy()
+
+        for (clearing_id, roost_cnt) in unused_roosts.items():
+            clearing_suit = board.get_clearing_suit(clearing_id=clearing_id)
+            for _ in range(min(roost_cnt, crafting_requirements.get(clearing_suit, 0))):
+                board.use_building_at_clearing(clearing_id=clearing_id, building_type=BuildingType.ROOST)
+                crafting_requirements[clearing_suit] -= 1
+                unused_roosts[clearing_id] -= 1
+        
+        # Handle wild requirements
+        for(clearing_id, roost_cnt) in unused_roosts.items():
+            if(crafting_requirements.get(Suit.Bird, 0) == 0):
+                break
+            while(not crafting_requirements.get(Suit.Bird, 0) == 0):
+                board.use_building_at_clearing(clearing_id=clearing_id, building_type=BuildingType.ROOST)
+                crafting_requirements[Suit.Bird] -= 1
+                unused_roosts[clearing_id] -= 1
     
+    def build(self, board: Board, clearing_id: int, building_type: BuildingType):
+        board.build(clearing_id=clearing_id, building_type=building_type, owner=self.faction_name)
+        if(building_type == BuildingType.ROOST):
+            self.roosts_placed += 1
+
+
 

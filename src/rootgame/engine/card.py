@@ -25,7 +25,7 @@ class ItemCard(Card):
     item: str
     crafting_VP: int
     suit: Suit | None = None
-    crafting_requirements: list[Suit] = field(default_factory=list)
+    crafting_requirements: dict[Suit, int] = field(default_factory=list)
 
     def __repr__(self):
         return f"Item: {self.suit.__str__()}, {[suit.__str__() for suit in self.crafting_requirements]}, {self.crafting_VP}"

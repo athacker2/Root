@@ -9,7 +9,7 @@ class Deck:
     cards: list[Card]
 
     def __init__(self):
-        self.cards = BASE_GAME_DECK
+        self.cards = list(BASE_GAME_DECK)
         self.shuffle_deck()
 
     def shuffle_deck(self):

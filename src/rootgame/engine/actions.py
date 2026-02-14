@@ -68,6 +68,10 @@ class MarquiseOverworkAction(Action):
 class MarquiseCraftAction(Action):
     card_idx: int
 
+@dataclass
+class MarquiseExtraTurnAction(Action):
+    card_idx: int
+
 # Eyrie Dynasties Actions
 @dataclass
 class EyrieAddToDecreeAction(Action):

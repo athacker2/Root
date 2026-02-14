@@ -5,7 +5,7 @@ from rootgame.engine.faction import Faction
 from rootgame.engine.player import Player
 from rootgame.engine.board import Board, Token, Clearing
 from rootgame.engine.building import Building, BuildingType
-from rootgame.engine.actions import Action, AddWoodToSawmillsAction, EndPhaseAction, MarchAction, MarquiseRecruitAction, MarquiseBuildAction, MarquiseOverworkAction, BattleAction, DrawCardAction, DiscardCardAction, MoveAction, MarquiseCraftAction
+from rootgame.engine.actions import Action, AddWoodToSawmillsAction, EndPhaseAction, MarchAction, MarquiseRecruitAction, MarquiseBuildAction, MarquiseOverworkAction, BattleAction, DrawCardAction, DiscardCardAction, MoveAction, MarquiseCraftAction, MarquiseExtraTurnAction
 from rootgame.engine.card import ItemCard
 
 from rootgame.engine.types import FactionName, TurnPhase, Suit, MAX_HAND_SIZE
@@ -17,6 +17,9 @@ class MarquiseDeCat(Faction):
     warrior_limit: ClassVar[int] = 25 # Starting number of warriors for Marquise de Cat
     warriors_placed: int = 0
 
+    wood_limit: ClassVar[int] = 8
+    wood_placed: int = 0
+
     sawmill_limit: ClassVar[int] = 6
     sawmills_placed: int = 0
 
@@ -27,6 +30,9 @@ class MarquiseDeCat(Faction):
     recruiters_placed: int = 0
 
     extra_cards_to_draw: int = 0
+
+    turn_action_limit: ClassVar[int] = 3
+    extra_actions_for_turn: int = 0
 
     building_cost: ClassVar[list[int]] = [0, 1, 2, 3, 3, 4]
 
@@ -57,7 +63,7 @@ class MarquiseDeCat(Faction):
         return [DrawCardAction(num_cards=1 + self.extra_cards_to_draw)]
     
     def reset_state(self):
-        pass
+        self.extra_actions_for_turn = 0
 
     def get_legal_actions(self, turn_phase: TurnPhase):
         # Implement logic to return legal actions for Marquise de Cat based on the turn phase
@@ -80,9 +86,9 @@ class MarquiseDeCat(Faction):
             pass
         
         elif(current_phase == TurnPhase.DAYLIGHT):
-            # Check for max of 3 actions during daylight
-            if(len([a for a in actions_taken if not isinstance(a, MarquiseCraftAction)]) >= 3 and not isinstance(action, EndPhaseAction)):
-                print("Can't take more than 3 actions")
+            # Check for max of 3 actions during daylight (+ 1 for every bird card used)
+            if(self.count_actions_taken(actions_taken=actions_taken) >= self.turn_action_limit + self.extra_actions_for_turn and not self.is_action_exempt_from_limit(action=action)):
+                print("Used up all daylight actions")
                 return False
             
             # Must do all crafting at start (first action, or following another craft actions)
@@ -204,6 +210,18 @@ class MarquiseDeCat(Faction):
                 if(board.clearing_has_building(clearing_id=action.clearing_id, building_type=BuildingType.SAWMILL)):
                     print("No sawmill at clearing")
                     return False
+                if(self.wood_placed == self.wood_limit):
+                    print("No wood available to place")
+                    return False
+                return True
+            
+            elif(isinstance(action, MarquiseExtraTurnAction)):
+                if(action.card_idx >= len(player.hand) or action.card_idx < 0):
+                    print("Invalid card index")
+                    return False
+                if(player.hand[action.card_idx].suit != Suit.Bird):
+                    print("Invalid card. Suit must be bird")
+                    return False
                 return True
             
             elif(isinstance(action, EndPhaseAction)):
@@ -234,6 +252,7 @@ class MarquiseDeCat(Faction):
             source_clearing = action.source_clearing
             destination_clearing = action.destination_clearing
             board.move_warriors(self.faction_name, num_warriors, source_clearing, destination_clearing)
+
         elif isinstance(action, BattleAction):
             clearing_id = action.clearing_id
             defender = action.defender
@@ -257,13 +276,18 @@ class MarquiseDeCat(Faction):
         elif(isinstance(action, MarquiseCraftAction)):
             used_card: ItemCard = player.hand.pop(action.card_idx)
             self.craft(card=used_card, board=board)
+        
+        elif(isinstance(action, MarquiseExtraTurnAction)):
+            player.hand.pop(action.card_idx)
+            self.extra_actions_for_turn += 1
     
     def add_wood_to_sawmills(self, board: Board):
         for clearing in board.clearings:
             for building in clearing.buildings:
-                if building.type is BuildingType.SAWMILL:
+                if building.type is BuildingType.SAWMILL and self.wood_placed < self.wood_limit:
                     building.used = True
                     clearing.add_token(token=Token.WOOD, owner=self.faction_name)
+                    self.warriors_placed += 1
     
     def find_wood_in_connected_ruled_clearings(self, board: Board, clearing_id: int) -> list[Clearing]:
         search_q = [board.clearings[clearing_id]]
@@ -315,6 +339,7 @@ class MarquiseDeCat(Faction):
             while wood_needed > 0 and Token.WOOD in clearing.tokens.get(FactionName.MARQUISE_DE_CAT, []):
                 clearing.tokens[FactionName.MARQUISE_DE_CAT].remove(Token.WOOD)
                 wood_needed -= 1
+                self.wood_placed -= 1
         
         # Add building to target clearing
         board.build(clearing_id=clearing_id, building_type=building_type, owner=self.faction_name)
@@ -332,6 +357,7 @@ class MarquiseDeCat(Faction):
 
         # Add wood to sawmill at clearing
         board.add_token_at_clearing(clearing_id=clearing_id, token=Token.WOOD, owner=self.faction_name)
+        self.wood_placed += 1
     
     def craft(self, card: ItemCard, board: Board):
         unused_workshops = board.get_unused_buildings_of_type(building_type=BuildingType.WORKSHOP)
@@ -352,3 +378,19 @@ class MarquiseDeCat(Faction):
                 board.use_building_at_clearing(clearing_id=clearing_id, building_type=BuildingType.WORKSHOP)
                 crafting_requirements[Suit.Bird] -= 1
                 unused_workshops[clearing_id] -= 1
+    
+    def count_actions_taken(self, actions_taken: list[Action]):
+        count = 0
+        for action in actions_taken:
+            if(isinstance(action, MarchAction) or
+               isinstance(action, MarquiseBuildAction) or
+               isinstance(action, MarquiseOverworkAction) or
+               isinstance(action, MarquiseRecruitAction) or
+               isinstance(action, BattleAction)):
+                count += 1
+        return count
+    
+    def is_action_exempt_from_limit(self, action: Action):
+        if(isinstance(action, EndPhaseAction) or isinstance(action, MarquiseExtraTurnAction)):
+            return True
+        return False

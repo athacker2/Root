@@ -84,15 +84,19 @@ def main():
                             continue
                         chosen_action = MarquiseOverworkAction(int(clearing_id), int(card_idx))
                     elif(chosen_action.startswith("CRAFT")):
-                        print("creating craft action")
                         if(not len(chosen_action.split(" ")) == 2):
-                            print("bad len")
                             continue
                         _, card_idx = chosen_action.split(" ")
                         if(not card_idx.isdigit()):
-                            print("not digit")
                             continue
                         chosen_action = MarquiseCraftAction(card_idx=int(card_idx))
+                    elif(chosen_action.startswith("EXTRA TURN")):
+                        if(not len(chosen_action.split(" ")) == 3):
+                            continue
+                        _, _, card_idx = chosen_action.split(" ")
+                        if(not card_idx.isdigit()):
+                            continue
+                        chosen_action = MarquiseExtraTurnAction(int(card_idx))
 
                 elif(game.current_player.faction.faction_name == FactionName.EYRIE_DYNASTIES):
                     if(chosen_action.startswith("ADD TO DECREE")):

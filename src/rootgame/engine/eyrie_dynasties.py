@@ -35,6 +35,8 @@ class EyrieDynasties(Faction):
     roost_limit: ClassVar[int] = 7
     roosts_placed: int = 0
 
+    extra_cards_to_draw: int = 0
+
 
     def board_setup(self, board: Board):
         # Place roost in bottom right
@@ -47,6 +49,15 @@ class EyrieDynasties(Faction):
 
         # Set decree based on leader
         self.set_leader_viziers()
+    
+    def pre_birdsong_actions(self):
+        return []
+    
+    def pre_evening_actions(self):
+        return [DrawCardAction(num_cards=1 + self.extra_cards_to_draw)]
+
+    def reset_state(self):
+        self.decree_actions_taken = {}
     
     def get_legal_actions(self, turn_phase: TurnPhase, board: Board):
          # Implement logic to return legal actions for Eyrie Dynasties based on the turn phase
@@ -269,6 +280,5 @@ class EyrieDynasties(Faction):
         self.leader = random.choice(leader_options)
         self.set_leader_viziers()
     
-    def reset_state(self):
-        self.decree_actions_taken = {}
+    
 

@@ -63,8 +63,15 @@ class Game:
         if isinstance(action, EndPhaseAction):
             if(self.current_phase == TurnPhase.BIRDSONG):
                 self.current_phase = TurnPhase.DAYLIGHT
+
             elif self.current_phase == TurnPhase.DAYLIGHT:
+                # Do pre-evening actions
+                actions_to_run = self.current_player.faction.pre_evening_actions()
+                for action in actions_to_run:
+                    self.apply_action(action)
+
                 self.current_phase = TurnPhase.EVENING
+
             elif self.current_phase == TurnPhase.EVENING:
                 # Do end of turn clean up for player
                 self.board.mark_all_buildings_unused()
@@ -81,7 +88,7 @@ class Game:
                     self.apply_action(action)
 
         elif(isinstance(action, DrawCardAction)):
-            self.current_player.hand.extend(self.deck.draw_card(1))
+            self.current_player.hand.extend(self.deck.draw_card(action.num_cards))
         elif(isinstance(action, DiscardCardAction)):
             self.discard_cards(self.current_player, action.card_ids)
         else:

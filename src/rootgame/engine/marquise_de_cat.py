@@ -52,6 +52,9 @@ class MarquiseDeCat(Faction):
     def pre_birdsong_actions(self):
         # Handle bird song actions automatically (since no user input needed)
         return [AddWoodToSawmillsAction(), EndPhaseAction()]
+    
+    def pre_evening_actions(self):
+        return [DrawCardAction(num_cards=1 + self.extra_cards_to_draw)]
         
     
     def reset_state(self):

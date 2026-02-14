@@ -25,3 +25,6 @@ class Faction(Protocol):
     
     def pre_birdsong_actions(self):
         ...
+    
+    def pre_evening_actions(self):
+        ...

@@ -134,18 +134,21 @@ class Board:
         return clearing_id >= 0 and clearing_id < len(self.clearings)
     
     def get_clearing_suit(self, clearing_id: int):
-        return self.clearings[clearing_id].suit
+        if(self.is_valid_clearing(clearing_id=clearing_id)):
+            return self.clearings[clearing_id].suit
     
     def get_clearing_ruler(self, clearing_id: int):
-        return self.clearings[clearing_id].ruler
+        if(self.is_valid_clearing(clearing_id=clearing_id)):
+            return self.clearings[clearing_id].ruler
     
     # Building Operations
     def build(self, clearing_id: int, building_type: BuildingType, owner: FactionName):
-        if(self.clearings[clearing_id].can_build()):
+        if(self.is_valid_clearing(clearing_id=clearing_id) and self.clearings[clearing_id].can_build()):
             self.clearings[clearing_id].add_building(Building(type=building_type, owner=owner))
     
     def clearing_has_building(self, clearing_id: int, building_type: BuildingType) -> bool:
-        return self.clearings[clearing_id].has_building(building_type=building_type)
+        if(self.is_valid_clearing(clearing_id=clearing_id)):
+            return self.clearings[clearing_id].has_building(building_type=building_type)
     
     def mark_all_buildings_unused(self):
         for clearing in self.clearings:
@@ -161,16 +164,18 @@ class Board:
         return unused_buildings
     
     def use_building_at_clearing(self, clearing_id: int, building_type: BuildingType):
-        if(self.clearings[clearing_id].has_building(building_type=building_type)):
+        if(self.is_valid_clearing(clearing_id=clearing_id) and self.clearings[clearing_id].has_building(building_type=building_type)):
             self.clearings[clearing_id].use_building(building_type)
     
     # Warrior Operations
     def add_warriors_at_clearing(self, clearing_id: int, faction: FactionName, num_warriors: int):
-        self.clearings[clearing_id].add_warriors(faction=faction, count=num_warriors)
+        if(self.is_valid_clearing(clearing_id=clearing_id)):
+            self.clearings[clearing_id].add_warriors(faction=faction, count=num_warriors)
 
-    def move_warriors(self, faction: FactionName, numWarriors: int, startClearing: int, endClearing: int):
-        self.clearings[startClearing].remove_warriors(faction, numWarriors)
-        self.clearings[endClearing].add_warriors(faction, numWarriors)
+    def move_warriors(self, faction: FactionName, numWarriors: int, source_clearing: int, dest_clearing: int):
+        if(self.is_valid_clearing(clearing_id=source_clearing) and self.is_valid_clearing(clearing_id=dest_clearing)):
+            self.clearings[source_clearing].remove_warriors(faction, numWarriors)
+            self.clearings[dest_clearing].add_warriors(faction, numWarriors)
     
     def can_move(self, faction: FactionName, numWarriors: int, source_clearing: int, dest_clearing: int):
         if(not self.is_valid_clearing(source_clearing) or not self.is_valid_clearing(dest_clearing)):
@@ -218,7 +223,8 @@ class Board:
     
     # Token Operations
     def add_token_at_clearing(self, clearing_id: int, token: Token, owner: FactionName):
-        self.clearings[clearing_id].add_token(token=token, owner=owner)
+        if(self.is_valid_clearing(clearing_id=clearing_id)):
+            self.clearings[clearing_id].add_token(token=token, owner=owner)
     
     # Misc Operations
     def export_clearing_info(self):

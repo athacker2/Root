@@ -69,7 +69,17 @@ class Clearing:
 
     def can_build(self):
         return len(self.buildings) < self.building_limit
-
+    
+    def use_building(self, building_type: BuildingType) -> bool:
+        if(not self.has_building(building_type=building_type)):
+            return False
+        
+        for building in self.buildings:
+            if building.type == building_type and building.used == False:
+                building.used = True
+                return True
+        return False
+        
     # Warrior Methods
     def add_warriors(self, faction: FactionName, count: int):
         self.warriors[faction] = self.warriors.get(faction, 0) + count
@@ -123,6 +133,9 @@ class Board:
     def is_valid_clearing(self, clearing_id: int):
         return clearing_id >= 0 and clearing_id < len(self.clearings)
     
+    def get_clearing_suit(self, clearing_id: int):
+        return self.clearings[clearing_id].suit
+    
     # Building Operations
     def build(self, clearing_id: int, building_type: BuildingType, owner: FactionName):
         if(self.clearings[clearing_id].can_build()):
@@ -136,40 +149,17 @@ class Board:
             for building in clearing.buildings:
                 building.used = False
     
-    def verify_crafting_requirements(self, building_type: BuildingType, crafting_requirements: list[Suit]):
-        # compute crafting requirements as dict
-        requirements = {}
-        for suit in crafting_requirements:
-            requirements[suit] = requirements.get(suit, 0) + 1
-
-        # retrieve counts of suit -> unused buildings
-        unused_building_counts = {}
-        for clearing in self.clearings:
-            for building in clearing.buildings:
-                if building.type == building_type and building.used == False:
-                    unused_building_counts[clearing.suit] = unused_building_counts.get(clearing.suit, 0) + 1
-        
-        for suit, cnt in requirements.items():
-            if(unused_building_counts.get(suit, 0) < cnt):
-                return False
-        return True
+    def get_unused_buildings_of_type(self, building_type: BuildingType):
+        unused_buildings: dict[int, int] = {}
+        for (id, clearing) in enumerate(self.clearings):
+            for building in clearing.get_buildings():
+                if(building.type == building_type):
+                    unused_buildings[id] = unused_buildings.setdefault(id, 0) + 1
+        return unused_buildings
     
-    def use_crafting_requirements(self, building_type: BuildingType, crafting_requirements: list[Suit]):
-        # compute crafting requirements as dict
-        requirements = {}
-        for suit in crafting_requirements:
-            requirements[suit] = requirements.get(suit, 0) + 1
-
-        # retrieve counts of suit -> unused buildings
-        unused_buildings = {}
-        for clearing in self.clearings:
-            for building in clearing.buildings:
-                if building.type == building_type and building.used == False:
-                    unused_buildings.setdefault(clearing.suit, []).append(building)
-        
-        for suit, cnt in requirements.items():
-            for i in range(cnt):
-                unused_buildings[suit][i].used = True
+    def use_building_at_clearing(self, clearing_id: int, building_type: BuildingType):
+        if(self.clearings[clearing_id].has_building(building_type=building_type)):
+            self.clearings[clearing_id].use_building(building_type)
     
     # Warrior Operations
     def move_warriors(self, faction: FactionName, numWarriors: int, startClearing: int, endClearing: int):
@@ -222,7 +212,7 @@ class Board:
     
     # Token Operations
     def add_token(self, clearing_id: int, token: Token, owner: FactionName):
-        self.clearings[clearing_id].add_token(token=token, faction=owner)
+        self.clearings[clearing_id].add_token(token=token, owner=owner)
     
     # Misc Operations
     def export_clearing_info(self):

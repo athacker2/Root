@@ -40,8 +40,7 @@ class EyrieDynasties(Faction):
 
     def board_setup(self, board: Board):
         # Place roost in bottom right
-        board.build(11, BuildingType.ROOST)
-        self.roosts_placed += 1
+        self.build(board=board, clearing_id=11, building_type=BuildingType.ROOST)
 
         # Place 6 warriors in starting clearing
         board.clearings[11].add_warriors(FactionName.EYRIE_DYNASTIES, 6)
@@ -117,11 +116,24 @@ class EyrieDynasties(Faction):
                     print("Not item card")
                     return False
                 
-                # Check if have enough unused workshops
+                # Check if there are enough unused roosts
                 card_to_craft: ItemCard = player.hand[action.card_idx]
-                if(not board.verify_crafting_requirements(building_type=BuildingType.ROOST, crafting_requirements=card_to_craft.crafting_requirements)):
+                unused_roost_cnts = board.get_unused_buildings_of_type(building_type=BuildingType.ROOST)
+
+                if(sum(card_to_craft.crafting_requirements.values()) > sum(unused_roost_cnts.values())):
                     print("Not enough roosts")
                     return False
+
+                unused_roots_by_suit = {}
+                for (clearing_id, roost_cnt) in unused_roost_cnts.items():
+                    clearing_suit = board.get_clearing_suit(clearing_id=clearing_id)
+                    unused_roots_by_suit[clearing_suit] = unused_roots_by_suit.get(clearing_suit, 0) + roost_cnt
+
+                for (suit, req_cnt) in card_to_craft.crafting_requirements.items():
+                    if(suit == Suit.Bird): continue
+                    if(unused_roost_cnts.get(suit, 0) < req_cnt):
+                        print(f"Not enough roosts of suit {suit}")
+                        return False
                 
                 return True
             
@@ -213,7 +225,7 @@ class EyrieDynasties(Faction):
                 self.take_decree_action(board.clearings[action.clearing_id].suit, DecreeOption.Battle)
                 
             elif(isinstance(action, EyrieBuildAction)):
-                board.build(action.clearing_id, BuildingType.ROOST)
+                self.build(board=board, clearing_id=action.clearing_id, building_type=BuildingType.ROOST)
                 self.take_decree_action(board.clearings[action.clearing_id].suit, DecreeOption.Build)
             
             elif(isinstance(action, EyrieTurmoilAction)):
@@ -221,7 +233,7 @@ class EyrieDynasties(Faction):
             
             elif(isinstance(action, EyrieCraftAction)):
                 used_card: ItemCard = player.hand.pop(action.card_idx)
-                board.use_crafting_requirements(building_type=BuildingType.ROOST, crafting_requirements=used_card.crafting_requirements)
+                self.craft(card=used_card, board=board)
 
     def add_to_decree(self, card: Card, decree_option: DecreeOption):
         if decree_option not in self.decree:
@@ -273,5 +285,30 @@ class EyrieDynasties(Faction):
         self.leader = random.choice(leader_options)
         self.set_leader_viziers()
     
+    def craft(self, card: ItemCard, board: Board):
+        unused_roosts = board.get_unused_buildings_of_type(building_type=BuildingType.ROOST)
+        crafting_requirements = card.crafting_requirements.copy()
+
+        for (clearing_id, roost_cnt) in unused_roosts.items():
+            clearing_suit = board.get_clearing_suit(clearing_id=clearing_id)
+            for _ in range(min(roost_cnt, crafting_requirements.get(clearing_suit, 0))):
+                board.use_building_at_clearing(clearing_id=clearing_id, building_type=BuildingType.ROOST)
+                crafting_requirements[clearing_suit] -= 1
+                unused_roosts[clearing_id] -= 1
+        
+        # Handle wild requirements
+        for(clearing_id, roost_cnt) in unused_roosts.items():
+            if(crafting_requirements.get(Suit.Bird, 0) == 0):
+                break
+            while(not crafting_requirements.get(Suit.Bird, 0) == 0):
+                board.use_building_at_clearing(clearing_id=clearing_id, building_type=BuildingType.ROOST)
+                crafting_requirements[Suit.Bird] -= 1
+                unused_roosts[clearing_id] -= 1
     
+    def build(self, board: Board, clearing_id: int, building_type: BuildingType):
+        board.build(clearing_id=clearing_id, building_type=building_type, owner=self.faction_name)
+        if(building_type == BuildingType.ROOST):
+            self.roosts_placed += 1
+
+
 

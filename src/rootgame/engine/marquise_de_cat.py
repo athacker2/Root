@@ -188,7 +188,7 @@ class MarquiseDeCat(Faction):
                 if(player.hand[action.card_idx].suit != board.clearings[action.clearing_id].suit):
                     print("Invalid card. Suit doesn't match")
                     return False
-                if(len(board.get_buildings(BuildingType.SAWMILL)) == 0):
+                if(board.clearing_has_building(clearing_id=action.clearing_id, building_type=BuildingType.SAWMILL)):
                     print("No sawmill at clearing")
                     return False
                 return True

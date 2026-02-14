@@ -22,3 +22,6 @@ class Faction(Protocol):
     
     def reset_state(self):
         ...
+    
+    def pre_birdsong_actions(self):
+        ...

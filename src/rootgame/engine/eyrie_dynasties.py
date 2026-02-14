@@ -63,13 +63,13 @@ class EyrieDynasties(Faction):
          # Implement logic to return legal actions for Eyrie Dynasties based on the turn phase
         legal_actions = ["END PHASE"]
         if turn_phase == TurnPhase.BIRDSONG:
-            legal_actions.extend(["ADD TO DECREE"])
+            legal_actions.extend(["ADD TO DECREE <CARD> <OPTION>"])
 
         elif turn_phase == TurnPhase.DAYLIGHT:
-            legal_actions.extend(["RECRUIT", "MOVE", "BATTLE", "BUILD"])
+            legal_actions.extend(["RECRUIT <CLEARING>", "MOVE <# UNIT> <SRC> <DEST>", "BATTLE <CLEARING> <PLAYER>", "BUILD <CLEARING>"])
 
         elif turn_phase == TurnPhase.EVENING:
-            legal_actions.extend(["DISCARD CARD"])
+            legal_actions.extend(["DISCARD <CARDS>"])
         
         return legal_actions
     

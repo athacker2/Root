@@ -55,7 +55,6 @@ class MarquiseDeCat(Faction):
     
     def pre_evening_actions(self):
         return [DrawCardAction(num_cards=1 + self.extra_cards_to_draw)]
-        
     
     def reset_state(self):
         pass
@@ -64,13 +63,14 @@ class MarquiseDeCat(Faction):
         # Implement logic to return legal actions for Marquise de Cat based on the turn phase
         legal_actions = ["END PHASE"]
         if turn_phase == TurnPhase.BIRDSONG:
-            legal_actions.extend(["ADD WOOD"])
+            # Bird song is automatic for marquise de cat
+            pass
 
         elif turn_phase == TurnPhase.DAYLIGHT:
-            legal_actions.extend(["BATTLE", "MARCH", "RECRUIT", "BUILD", "OVERWORK # #"])
+            legal_actions.extend(["BATTLE <CLEARING> <PLAYER>", "MARCH <# UNIT> <SRC> <DEST> <# UNIT> <SRC> <DEST>", "RECRUIT", "BUILD <CLEARING> <BLDG>", "OVERWORK <CLEARING> <CARD>"])
 
         elif turn_phase == TurnPhase.EVENING:
-            legal_actions.extend(["DISCARD CARD"])
+            legal_actions.extend(["DISCARD <CARDS>"])
         
         return legal_actions
     

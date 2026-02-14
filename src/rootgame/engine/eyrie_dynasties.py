@@ -266,7 +266,7 @@ class EyrieDynasties(Faction):
         self.decree_actions_taken = {}
         self.used_leaders.append(self.leader)
 
-        if(len(self.used_leaders) == len(EyrieLeader)):
+        if(len(self.used_leaders) == len(list(EyrieLeader))):
             self.used_leaders = []
 
         leader_options = [leader for leader in EyrieLeader if leader not in self.used_leaders]

@@ -220,6 +220,9 @@ class Board:
 
         battle_clearing.remove_warriors(attacker, defense_hits)
         battle_clearing.remove_warriors(defender, attack_hits)
+        
+        # Placeholder for vp scored from battle
+        return 0
     
     # Token Operations
     def add_token_at_clearing(self, clearing_id: int, token: Token, owner: FactionName):

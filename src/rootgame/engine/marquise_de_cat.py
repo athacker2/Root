@@ -70,31 +70,16 @@ class MarquiseDeCat(Faction):
             legal_actions.extend(["BATTLE", "MARCH", "RECRUIT", "BUILD", "OVERWORK # #"])
 
         elif turn_phase == TurnPhase.EVENING:
-            legal_actions.extend(["DRAW CARD", "DISCARD CARD"])
+            legal_actions.extend(["DISCARD CARD"])
         
         return legal_actions
     
     def is_action_legal(self, action: Action, current_phase: TurnPhase, player: Player, board: Board, actions_taken: list[Action]):
         if(current_phase == TurnPhase.BIRDSONG):
-            if(isinstance(action, AddWoodToSawmillsAction)):
-                if(self.sawmills_placed == 0):
-                    print("No sawmills placed")
-                    return False
-                if sum(isinstance(a, AddWoodToSawmillsAction) for a in actions_taken) == 1:
-                    print("Already added wood")
-                    return False
-                return True
-            
-            elif(isinstance(action, EndPhaseAction)):
-                if sum(isinstance(a, AddWoodToSawmillsAction) for a in actions_taken) == 0:
-                    print("Need to add wood before ending")
-                    return False
-                return True
-            
-            return False
+            # Bird song is automatic for marquise de cat
+            pass
         
         elif(current_phase == TurnPhase.DAYLIGHT):
-
             # Check for max of 3 actions during daylight
             if(len([a for a in actions_taken if not isinstance(a, MarquiseCraftAction)]) >= 3 and not isinstance(action, EndPhaseAction)):
                 print("Can't take more than 3 actions")
@@ -213,13 +198,8 @@ class MarquiseDeCat(Faction):
             
             return False
 
-        elif(current_phase == TurnPhase.EVENING):
-            if(isinstance(action, DrawCardAction)):
-                if sum(isinstance(a, DrawCardAction) for a in actions_taken) == 1:
-                    return False
-                return True
-            
-            elif(isinstance(action, DiscardCardAction)):
+        elif(current_phase == TurnPhase.EVENING):            
+            if(isinstance(action, DiscardCardAction)):
                 if(len(player.hand) < MAX_HAND_SIZE):
                     return False
                 if(len(player.hand) - len(action.card_ids) != MAX_HAND_SIZE):
@@ -229,8 +209,6 @@ class MarquiseDeCat(Faction):
                 return True
             
             elif(isinstance(action, EndPhaseAction)):
-                if(sum(isinstance(a, DrawCardAction) for a in actions_taken) == 0):
-                    return False
                 if(len(player.hand) > MAX_HAND_SIZE):
                     return False
                 return True

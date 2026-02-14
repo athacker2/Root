@@ -69,7 +69,7 @@ class EyrieDynasties(Faction):
             legal_actions.extend(["RECRUIT", "MOVE", "BATTLE", "BUILD"])
 
         elif turn_phase == TurnPhase.EVENING:
-            legal_actions.extend(["DRAW CARD", "DISCARD CARD"])
+            legal_actions.extend(["DISCARD CARD"])
         
         return legal_actions
     
@@ -175,13 +175,8 @@ class EyrieDynasties(Faction):
             elif(isinstance(action, EndPhaseAction)):
                 return True
                 
-        elif(current_phase == TurnPhase.EVENING):
-            if(isinstance(action, DrawCardAction)):
-                if sum(isinstance(a, DrawCardAction) for a in actions_taken) == 1:
-                    return False
-                return True
-            
-            elif(isinstance(action, DiscardCardAction)):
+        elif(current_phase == TurnPhase.EVENING):            
+            if(isinstance(action, DiscardCardAction)):
                 if(len(player.hand) < MAX_HAND_SIZE):
                     return False
                 if(len(player.hand) - len(action.card_ids) != MAX_HAND_SIZE):
@@ -191,8 +186,6 @@ class EyrieDynasties(Faction):
                 return True
             
             elif(isinstance(action, EndPhaseAction)):
-                if(sum(isinstance(a, DrawCardAction) for a in actions_taken) == 0):
-                    return False
                 if(len(player.hand) > MAX_HAND_SIZE):
                     return False
                 return True

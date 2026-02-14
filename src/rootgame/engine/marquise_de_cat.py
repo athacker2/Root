@@ -40,13 +40,8 @@ class MarquiseDeCat(Faction):
 
         # Place one of each building in clearings adjacent to keep
         self.build(board, 4, BuildingType.WORKSHOP)
-        self.workshops_placed += 1
-
         self.build(board, 3, BuildingType.SAWMILL)
-        self.sawmills_placed += 1
-
         self.build(board, 1, BuildingType.RECRUITER)
-        self.recruiters_placed += 1
 
         # Place 1 warrior in every clearing (except corner opposite to keep)
         for (id, clearing) in enumerate(board.clearings):
@@ -54,41 +49,37 @@ class MarquiseDeCat(Faction):
                 clearing.add_warriors(FactionName.MARQUISE_DE_CAT, 1)
                 self.warriors_placed += 1
 
+    def pre_birdsong_actions(self):
+        # Handle bird song actions automatically (since no user input needed)
+        return [AddWoodToSawmillsAction(), EndPhaseAction()]
+    
+    def pre_evening_actions(self):
+        return [DrawCardAction(num_cards=1 + self.extra_cards_to_draw)]
+    
+    def reset_state(self):
+        pass
+
     def get_legal_actions(self, turn_phase: TurnPhase, board: Board):
         # Implement logic to return legal actions for Marquise de Cat based on the turn phase
         legal_actions = ["END PHASE"]
         if turn_phase == TurnPhase.BIRDSONG:
-            legal_actions.extend(["ADD WOOD"])
+            # Bird song is automatic for marquise de cat
+            pass
 
         elif turn_phase == TurnPhase.DAYLIGHT:
-            legal_actions.extend(["BATTLE", "MARCH", "RECRUIT", "BUILD", "OVERWORK # #"])
+            legal_actions.extend(["BATTLE <CLEARING> <PLAYER>", "MARCH <# UNIT> <SRC> <DEST> <# UNIT> <SRC> <DEST>", "RECRUIT", "BUILD <CLEARING> <BLDG>", "OVERWORK <CLEARING> <CARD>"])
 
         elif turn_phase == TurnPhase.EVENING:
-            legal_actions.extend(["DRAW CARD", "DISCARD CARD"])
+            legal_actions.extend(["DISCARD <CARDS>"])
         
         return legal_actions
     
     def is_action_legal(self, action: Action, current_phase: TurnPhase, player: Player, board: Board, actions_taken: list[Action]):
         if(current_phase == TurnPhase.BIRDSONG):
-            if(isinstance(action, AddWoodToSawmillsAction)):
-                if(self.sawmills_placed == 0):
-                    print("No sawmills placed")
-                    return False
-                if sum(isinstance(a, AddWoodToSawmillsAction) for a in actions_taken) == 1:
-                    print("Already added wood")
-                    return False
-                return True
-            
-            elif(isinstance(action, EndPhaseAction)):
-                if sum(isinstance(a, AddWoodToSawmillsAction) for a in actions_taken) == 0:
-                    print("Need to add wood before ending")
-                    return False
-                return True
-            
-            return False
+            # Bird song is automatic for marquise de cat
+            pass
         
         elif(current_phase == TurnPhase.DAYLIGHT):
-
             # Check for max of 3 actions during daylight
             if(len([a for a in actions_taken if not isinstance(a, MarquiseCraftAction)]) >= 3 and not isinstance(action, EndPhaseAction)):
                 print("Can't take more than 3 actions")
@@ -183,7 +174,7 @@ class MarquiseDeCat(Faction):
                     wood_available += clearing.tokens.get(FactionName.MARQUISE_DE_CAT, []).count(Token.WOOD)
                 
                 if(wood_available < wood_needed):
-                    print("Insufficient wood")
+                    print(f"Insufficient wood: {wood_available} vs {wood_needed}")
                     return False
                 return True
                 
@@ -207,13 +198,8 @@ class MarquiseDeCat(Faction):
             
             return False
 
-        elif(current_phase == TurnPhase.EVENING):
-            if(isinstance(action, DrawCardAction)):
-                if sum(isinstance(a, DrawCardAction) for a in actions_taken) == 1:
-                    return False
-                return True
-            
-            elif(isinstance(action, DiscardCardAction)):
+        elif(current_phase == TurnPhase.EVENING):            
+            if(isinstance(action, DiscardCardAction)):
                 if(len(player.hand) < MAX_HAND_SIZE):
                     return False
                 if(len(player.hand) - len(action.card_ids) != MAX_HAND_SIZE):
@@ -223,8 +209,6 @@ class MarquiseDeCat(Faction):
                 return True
             
             elif(isinstance(action, EndPhaseAction)):
-                if(sum(isinstance(a, DrawCardAction) for a in actions_taken) == 0):
-                    return False
                 if(len(player.hand) > MAX_HAND_SIZE):
                     return False
                 return True
@@ -332,7 +316,3 @@ class MarquiseDeCat(Faction):
 
         # Add wood to sawmill at clearing
         board.clearings[clearing_id].add_token(self.faction_name, Token.WOOD)
-
-
-    def reset_state(self):
-        pass

@@ -25,7 +25,7 @@ class PlayCardAction(Action):
 
 @dataclass
 class DrawCardAction(Action):
-    pass
+    num_cards: int
 
 @dataclass 
 class DiscardCardAction(Action):

@@ -21,54 +21,78 @@ class Game:
 
     # Turn-related data
     round: int = 0
-    current_player: int = 0
+    current_player: Player | None = None
     current_phase: TurnPhase = TurnPhase.BIRDSONG
 
     def __init__(self):
         # Initialize players, board, and game state
         self.players = [Player() for _ in range(2)]  # Assuming 2 players for now
-        self.players[0].faction = EyrieDynasties(EyrieLeader.BUILDER)
-        self.players[1].faction = MarquiseDeCat()
+        self.players[1].faction = EyrieDynasties(EyrieLeader.BUILDER)
+        self.players[0].faction = MarquiseDeCat()
+
+        self.current_player = self.players[0]
 
         self.deck = Deck()
         for player in self.players:
-            player.hand = self.deck.draw_card(10)  # Each player starts with 3 cards
+            player.hand = self.deck.draw_card(3)  # Each player starts with 3 cards
 
         self.board = Board()
         self.new_game_board_setup()
 
         self.game_log = GameLog()
 
+        # Do pre-birdsong actions for new player
+        actions_to_run = self.current_player.faction.pre_birdsong_actions()
+        for action in actions_to_run:
+            self.apply_action(action)
+
     def new_game_board_setup(self):
         for p in self.players:
             p.faction.board_setup(self.board)
 
-    def get_legal_actions(self, player: Player):
-        return player.faction.get_legal_actions(self.current_phase, self.board)
+    def get_legal_actions(self):
+        return self.current_player.faction.get_legal_actions(self.current_phase, self.current_player)
     
-    def is_action_legal(self, player: Player, action: Action):
-        return player.faction.is_action_legal(action, self.current_phase, player, self.board, self.game_log.get_actions_for_turn_phase(self.round, self.current_phase))
+    def is_action_legal(self, action: Action):
+        return self.current_player.faction.is_action_legal(action, self.current_phase, self.current_player, self.board, self.game_log.get_actions_for_turn_phase(self.round, self.current_phase))
             
-    def apply_action(self, player: Player, action: Action):
-        self.game_log.log_action(self.round, player, self.current_phase, action)
+    def apply_action(self, action: Action):
+        # Log the action
+        self.game_log.log_action(self.round, self.current_player, self.current_phase, action)
+
         if isinstance(action, EndPhaseAction):
             if(self.current_phase == TurnPhase.BIRDSONG):
                 self.current_phase = TurnPhase.DAYLIGHT
-            elif self.current_phase == TurnPhase.DAYLIGHT:
-                self.current_phase = TurnPhase.EVENING
-            elif self.current_phase == TurnPhase.EVENING:
-                self.current_phase = TurnPhase.BIRDSONG
 
-                # Mark all buildings as unused at the end of the round
+            elif self.current_phase == TurnPhase.DAYLIGHT:
+                # Do pre-evening actions
+                actions_to_run = self.current_player.faction.pre_evening_actions()
+                for action in actions_to_run:
+                    self.apply_action(action)
+
+                self.current_phase = TurnPhase.EVENING
+
+            elif self.current_phase == TurnPhase.EVENING:
+                # Do end of turn clean up for player
                 self.board.mark_all_buildings_unused()
-                player.faction.reset_state()
+                self.current_player.faction.reset_state()
+
+                # Move to next round/phase
                 self.round += 1
+                self.current_phase = TurnPhase.BIRDSONG
+                self.current_player = self.players[self.round % len(self.players)]
+
+                # Do pre-birdsong actions for next player
+                actions_to_run = self.current_player.faction.pre_birdsong_actions()
+                for action in actions_to_run:
+                    self.apply_action(action)
+
         elif(isinstance(action, DrawCardAction)):
-            player.hand.extend(self.deck.draw_card(1))
+            self.current_player.hand.extend(self.deck.draw_card(action.num_cards))
         elif(isinstance(action, DiscardCardAction)):
-            self.discard_cards(player, action.card_ids)
+            self.discard_cards(self.current_player, action.card_ids)
         else:
-            player.faction.apply_action(action, self.board, player)
+            self.current_player.faction.apply_action(action, self.board, self.current_player)
 
     def play_card(self, player: Player, card_idx: int):
         card = player.hand[card_idx]

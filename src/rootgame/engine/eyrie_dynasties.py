@@ -35,6 +35,8 @@ class EyrieDynasties(Faction):
     roost_limit: ClassVar[int] = 7
     roosts_placed: int = 0
 
+    extra_cards_to_draw: int = 0
+
 
     def board_setup(self, board: Board):
         # Place roost in bottom right
@@ -48,17 +50,26 @@ class EyrieDynasties(Faction):
         # Set decree based on leader
         self.set_leader_viziers()
     
+    def pre_birdsong_actions(self):
+        return []
+    
+    def pre_evening_actions(self):
+        return [DrawCardAction(num_cards=1 + self.extra_cards_to_draw)]
+
+    def reset_state(self):
+        self.decree_actions_taken = {}
+    
     def get_legal_actions(self, turn_phase: TurnPhase, board: Board):
          # Implement logic to return legal actions for Eyrie Dynasties based on the turn phase
         legal_actions = ["END PHASE"]
         if turn_phase == TurnPhase.BIRDSONG:
-            legal_actions.extend(["ADD TO DECREE"])
+            legal_actions.extend(["ADD TO DECREE <CARD> <OPTION>"])
 
         elif turn_phase == TurnPhase.DAYLIGHT:
-            legal_actions.extend(["RECRUIT", "MOVE", "BATTLE", "BUILD"])
+            legal_actions.extend(["RECRUIT <CLEARING>", "MOVE <# UNIT> <SRC> <DEST>", "BATTLE <CLEARING> <PLAYER>", "BUILD <CLEARING>"])
 
         elif turn_phase == TurnPhase.EVENING:
-            legal_actions.extend(["DRAW CARD", "DISCARD CARD"])
+            legal_actions.extend(["DISCARD <CARDS>"])
         
         return legal_actions
     
@@ -164,13 +175,8 @@ class EyrieDynasties(Faction):
             elif(isinstance(action, EndPhaseAction)):
                 return True
                 
-        elif(current_phase == TurnPhase.EVENING):
-            if(isinstance(action, DrawCardAction)):
-                if sum(isinstance(a, DrawCardAction) for a in actions_taken) == 1:
-                    return False
-                return True
-            
-            elif(isinstance(action, DiscardCardAction)):
+        elif(current_phase == TurnPhase.EVENING):            
+            if(isinstance(action, DiscardCardAction)):
                 if(len(player.hand) < MAX_HAND_SIZE):
                     return False
                 if(len(player.hand) - len(action.card_ids) != MAX_HAND_SIZE):
@@ -180,8 +186,6 @@ class EyrieDynasties(Faction):
                 return True
             
             elif(isinstance(action, EndPhaseAction)):
-                if(sum(isinstance(a, DrawCardAction) for a in actions_taken) == 0):
-                    return False
                 if(len(player.hand) > MAX_HAND_SIZE):
                     return False
                 return True
@@ -269,6 +273,5 @@ class EyrieDynasties(Faction):
         self.leader = random.choice(leader_options)
         self.set_leader_viziers()
     
-    def reset_state(self):
-        self.decree_actions_taken = {}
+    
 

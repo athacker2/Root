@@ -51,7 +51,7 @@ class Game:
             p.faction.board_setup(self.board)
 
     def get_legal_actions(self):
-        return self.current_player.faction.get_legal_actions(self.current_phase, self.current_player)
+        return self.current_player.faction.get_legal_actions(self.current_phase)
     
     def is_action_legal(self, action: Action):
         return self.current_player.faction.is_action_legal(action, self.current_phase, self.current_player, self.board, self.game_log.get_actions_for_turn_phase(self.round, self.current_phase))

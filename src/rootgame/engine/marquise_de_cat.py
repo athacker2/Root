@@ -36,7 +36,7 @@ class MarquiseDeCat(Faction):
 
     def board_setup(self, board: Board):
         # Place keep in top left clearing (TO CHANGE W/INTERACTIVE SETUP)
-        board.add_token(clearing_id=0, token=Token.KEEP, owner=self.faction_name)
+        board.add_token_at_clearing(clearing_id=0, token=Token.KEEP, owner=self.faction_name)
 
         # Place one of each building in clearings adjacent to keep
         self.build(board, 4, BuildingType.WORKSHOP)
@@ -198,7 +198,7 @@ class MarquiseDeCat(Faction):
                 if(board.is_valid_clearing(action.clearing_id) == False):
                     print("Invalid clearing")
                     return False
-                if(player.hand[action.card_idx].suit != board.clearings[action.clearing_id].suit):
+                if(player.hand[action.card_idx].suit != board.get_clearing_suit(action.clearing_id)):
                     print("Invalid card. Suit doesn't match")
                     return False
                 if(board.clearing_has_building(clearing_id=action.clearing_id, building_type=BuildingType.SAWMILL)):
@@ -331,7 +331,7 @@ class MarquiseDeCat(Faction):
         player.hand.pop(card_idx)  # Remove the card from player's hand
 
         # Add wood to sawmill at clearing
-        board.clearings[clearing_id].add_token(token=Token.KEEP, owner=self.faction_name)
+        board.add_token_at_clearing(clearing_id=clearing_id, token=Token.WOOD, owner=self.faction_name)
     
     def craft(self, card: ItemCard, board: Board):
         unused_workshops = board.get_unused_buildings_of_type(building_type=BuildingType.WORKSHOP)

@@ -136,6 +136,9 @@ class Board:
     def get_clearing_suit(self, clearing_id: int):
         return self.clearings[clearing_id].suit
     
+    def get_clearing_ruler(self, clearing_id: int):
+        return self.clearings[clearing_id].ruler
+    
     # Building Operations
     def build(self, clearing_id: int, building_type: BuildingType, owner: FactionName):
         if(self.clearings[clearing_id].can_build()):
@@ -162,6 +165,9 @@ class Board:
             self.clearings[clearing_id].use_building(building_type)
     
     # Warrior Operations
+    def add_warriors_at_clearing(self, clearing_id: int, faction: FactionName, num_warriors: int):
+        self.clearings[clearing_id].add_warriors(faction=faction, count=num_warriors)
+
     def move_warriors(self, faction: FactionName, numWarriors: int, startClearing: int, endClearing: int):
         self.clearings[startClearing].remove_warriors(faction, numWarriors)
         self.clearings[endClearing].add_warriors(faction, numWarriors)
@@ -211,7 +217,7 @@ class Board:
         battle_clearing.remove_warriors(defender, attack_hits)
     
     # Token Operations
-    def add_token(self, clearing_id: int, token: Token, owner: FactionName):
+    def add_token_at_clearing(self, clearing_id: int, token: Token, owner: FactionName):
         self.clearings[clearing_id].add_token(token=token, owner=owner)
     
     # Misc Operations

@@ -43,7 +43,7 @@ class EyrieDynasties(Faction):
         self.build(board=board, clearing_id=11, building_type=BuildingType.ROOST)
 
         # Place 6 warriors in starting clearing
-        board.clearings[11].add_warriors(FactionName.EYRIE_DYNASTIES, 6)
+        board.add_warriors_at_clearing(clearing_id=11, faction=self.faction_name, num_warriors=6)
         self.warriors_placed += 6
 
         # Set decree based on leader
@@ -144,9 +144,9 @@ class EyrieDynasties(Faction):
                         return False
                     if(DecreeOption.Recruit not in self.decree or len(self.decree.get(DecreeOption.Recruit, [])) == 0):
                         return False
-                    if(not self.suit_exists_in_decree_option(DecreeOption.Recruit, board.clearings[action.clearing_id].suit)):
+                    if(not self.suit_exists_in_decree_option(DecreeOption.Recruit, board.get_clearing_suit(action.clearing_id))):
                         return False
-                    if(not board.clearings[action.clearing_id].has_building(BuildingType.ROOST)):
+                    if(not board.clearing_has_building(clearing_id=action.clearing_id, building_type=BuildingType.ROOST)):
                         return False
                     if(self.warriors_placed == self.warrior_limit):
                         return False
@@ -157,7 +157,7 @@ class EyrieDynasties(Faction):
                 if(isinstance(action, EyrieMoveAction)):
                     if(not board.can_move(self.faction_name, action.num_warriors, action.source_clearing, action.destination_clearing)):
                         return False
-                    if(not self.suit_exists_in_decree_option(DecreeOption.Move, board.clearings[action.source_clearing].suit)):
+                    if(not self.suit_exists_in_decree_option(DecreeOption.Move, board.get_clearing_suit(action.clearing_id))):
                         return False
                     return True
                 return False
@@ -166,18 +166,18 @@ class EyrieDynasties(Faction):
                 if(isinstance(action, BattleAction)):
                     if(not board.can_battle(self.faction_name, action.defender.faction.faction_name, action.clearing_id)):
                         return False
-                    if(not self.suit_exists_in_decree_option(DecreeOption.Battle, board.clearings[action.clearing_id].suit)):
+                    if(not self.suit_exists_in_decree_option(DecreeOption.Battle, board.get_clearing_suit(action.clearing_id))):
                         return False
                     return True
                 return False
             
             elif(not self.resolved_decree_option(DecreeOption.Build)):
                 if(isinstance(action, EyrieBuildAction)):
-                    if(not self.suit_exists_in_decree_option(DecreeOption.Build, board.clearings[action.clearing_id].suit)):
+                    if(not self.suit_exists_in_decree_option(DecreeOption.Build, board.get_clearing_suit(action.clearing_id))):
                         return False
-                    if(not board.clearings[action.clearing_id].ruler == self.faction_name):
+                    if(not board.get_clearing_ruler(action.clearing_id) == self.faction_name):
                         return False
-                    if(board.clearings[action.clearing_id].has_building(BuildingType.ROOST)):
+                    if(board.clearing_has_building(clearing_id=action.clearing_id, building_type=BuildingType.ROOST)):
                         return False
                     if(self.roosts_placed == self.roost_limit):
                         return False
@@ -213,20 +213,20 @@ class EyrieDynasties(Faction):
                 player.hand.pop(action.card_id)
 
             elif(isinstance(action, EyrieRecruitAction)):
-                board.clearings[action.clearing_id].add_warriors(FactionName.EYRIE_DYNASTIES, 1)
-                self.take_decree_action(board.clearings[action.clearing_id].suit, DecreeOption.Recruit)
+                board.add_warriors_at_clearing(clearing_id=action.clearing_id, faction=self.faction_name, num_warriors=1)
+                self.take_decree_action(board.get_clearing_suit(action.clearing_id), DecreeOption.Recruit)
 
             elif(isinstance(action, EyrieMoveAction)):
                 board.move_warriors(self.faction_name, action.num_warriors, action.source_clearing, action.destination_clearing)
-                self.take_decree_action(board.clearings[action.source_clearing].suit, DecreeOption.Move)
+                self.take_decree_action(board.get_clearing_suit(action.clearing_id), DecreeOption.Move)
 
             elif(isinstance(action, BattleAction)):
                 board.battle(self.faction_name, action.defender.faction.faction_name, action.clearing_id)
-                self.take_decree_action(board.clearings[action.clearing_id].suit, DecreeOption.Battle)
+                self.take_decree_action(board.get_clearing_suit(action.clearing_id), DecreeOption.Battle)
                 
             elif(isinstance(action, EyrieBuildAction)):
                 self.build(board=board, clearing_id=action.clearing_id, building_type=BuildingType.ROOST)
-                self.take_decree_action(board.clearings[action.clearing_id].suit, DecreeOption.Build)
+                self.take_decree_action(board.get_clearing_suit(action.clearing_id), DecreeOption.Build)
             
             elif(isinstance(action, EyrieTurmoilAction)):
                 self.turmoil()

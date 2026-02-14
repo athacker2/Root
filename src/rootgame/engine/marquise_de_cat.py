@@ -17,6 +17,9 @@ class MarquiseDeCat(Faction):
     warrior_limit: ClassVar[int] = 25 # Starting number of warriors for Marquise de Cat
     warriors_placed: int = 0
 
+    wood_limit: ClassVar[int] = 8
+    wood_placed: int = 0
+
     sawmill_limit: ClassVar[int] = 6
     sawmills_placed: int = 0
 
@@ -204,6 +207,9 @@ class MarquiseDeCat(Faction):
                 if(board.clearing_has_building(clearing_id=action.clearing_id, building_type=BuildingType.SAWMILL)):
                     print("No sawmill at clearing")
                     return False
+                if(self.wood_placed == self.wood_limit):
+                    print("No wood available to place")
+                    return False
                 return True
             
             elif(isinstance(action, EndPhaseAction)):
@@ -261,9 +267,10 @@ class MarquiseDeCat(Faction):
     def add_wood_to_sawmills(self, board: Board):
         for clearing in board.clearings:
             for building in clearing.buildings:
-                if building.type is BuildingType.SAWMILL:
+                if building.type is BuildingType.SAWMILL and self.wood_placed < self.wood_limit:
                     building.used = True
                     clearing.add_token(token=Token.WOOD, owner=self.faction_name)
+                    self.warriors_placed += 1
     
     def find_wood_in_connected_ruled_clearings(self, board: Board, clearing_id: int) -> list[Clearing]:
         search_q = [board.clearings[clearing_id]]
@@ -315,6 +322,7 @@ class MarquiseDeCat(Faction):
             while wood_needed > 0 and Token.WOOD in clearing.tokens.get(FactionName.MARQUISE_DE_CAT, []):
                 clearing.tokens[FactionName.MARQUISE_DE_CAT].remove(Token.WOOD)
                 wood_needed -= 1
+                self.wood_placed -= 1
         
         # Add building to target clearing
         board.build(clearing_id=clearing_id, building_type=building_type, owner=self.faction_name)
@@ -332,6 +340,7 @@ class MarquiseDeCat(Faction):
 
         # Add wood to sawmill at clearing
         board.add_token_at_clearing(clearing_id=clearing_id, token=Token.WOOD, owner=self.faction_name)
+        self.wood_placed += 1
     
     def craft(self, card: ItemCard, board: Board):
         unused_workshops = board.get_unused_buildings_of_type(building_type=BuildingType.WORKSHOP)

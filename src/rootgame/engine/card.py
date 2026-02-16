@@ -11,7 +11,7 @@ class EffectCard(Card):
     name: str
     persistent: bool
     suit: Suit | None = None
-    crafting_requirements: list[Suit] = field(default_factory=list)
+    crafting_requirements: dict[Suit, int] = field(default_factory=list)
 
     def __repr__(self):
         return f"Effect: {self.suit.__str__()}, {[suit.__str__() for suit in self.crafting_requirements]}"

@@ -121,7 +121,7 @@ class MarquiseDeCat(Faction):
 
                 for (suit, req_cnt) in card_to_craft.crafting_requirements.items():
                     if(suit == Suit.Bird): continue
-                    if(unused_workshop_cnts.get(suit, 0) < req_cnt):
+                    if(unused_workshops_by_suit.get(suit, 0) < req_cnt):
                         print(f"Not enough workshops of suit {suit}")
                         return False
                 
@@ -207,7 +207,7 @@ class MarquiseDeCat(Faction):
                 if(player.hand[action.card_idx].suit != board.get_clearing_suit(action.clearing_id)):
                     print("Invalid card. Suit doesn't match")
                     return False
-                if(board.clearing_has_building(clearing_id=action.clearing_id, building_type=BuildingType.SAWMILL)):
+                if(not board.clearing_has_building(clearing_id=action.clearing_id, building_type=BuildingType.SAWMILL)):
                     print("No sawmill at clearing")
                     return False
                 if(self.wood_placed == self.wood_limit):
@@ -247,6 +247,8 @@ class MarquiseDeCat(Faction):
             return False
         
     def apply_action(self, action: Action, board: Board, player: Player):
+        vp_scored: int = 0
+
         if isinstance(action, MoveAction):
             num_warriors = action.num_warriors
             source_clearing = action.source_clearing
@@ -264,22 +266,24 @@ class MarquiseDeCat(Faction):
         elif isinstance(action, MarchAction):
             self.march(board, action.move_one.num_warriors, action.move_one.source_clearing, action.move_one.destination_clearing,
                                     action.move_two.num_warriors, action.move_two.source_clearing, action.move_two.destination_clearing)
+            
         elif(isinstance(action, MarquiseRecruitAction)):
             self.recruit(board)
             
         elif(isinstance(action, MarquiseBuildAction)):
-            self.build(board, action.clearing_id, action.building_type)
+            vp_scored = self.build(board, action.clearing_id, action.building_type)
         
         elif(isinstance(action, MarquiseOverworkAction)):
             self.overwork(board, action.clearing_id, player, action.card_idx)
 
         elif(isinstance(action, MarquiseCraftAction)):
-            used_card: ItemCard = player.hand.pop(action.card_idx)
-            self.craft(card=used_card, board=board)
+            vp_scored = self.craft(card=player.hand.pop(action.card_idx), board=board)
         
         elif(isinstance(action, MarquiseExtraTurnAction)):
             player.hand.pop(action.card_idx)
             self.extra_actions_for_turn += 1
+        
+        return vp_scored
     
     def add_wood_to_sawmills(self, board: Board):
         for clearing in board.clearings:
@@ -287,7 +291,7 @@ class MarquiseDeCat(Faction):
                 if building.type is BuildingType.SAWMILL and self.wood_placed < self.wood_limit:
                     building.used = True
                     clearing.add_token(token=Token.WOOD, owner=self.faction_name)
-                    self.warriors_placed += 1
+                    self.wood_placed += 1
     
     def find_wood_in_connected_ruled_clearings(self, board: Board, clearing_id: int) -> list[Clearing]:
         search_q = [board.clearings[clearing_id]]
@@ -346,10 +350,13 @@ class MarquiseDeCat(Faction):
 
         if(building_type is BuildingType.SAWMILL):
             self.sawmills_placed += 1
+            return self.sawmill_VP[self.sawmills_placed - 1]
         elif(building_type is BuildingType.WORKSHOP):
             self.workshops_placed += 1
+            return self.workshop_VP[self.workshops_placed - 1]
         elif(building_type is BuildingType.RECRUITER):
             self.recruiters_placed += 1
+            return self.recruiter_VP[self.recruiters_placed - 1]
     
     def overwork(self, board: Board, clearing_id: int, player: Player, card_idx: int):
         # Use card
@@ -378,6 +385,8 @@ class MarquiseDeCat(Faction):
                 board.use_building_at_clearing(clearing_id=clearing_id, building_type=BuildingType.WORKSHOP)
                 crafting_requirements[Suit.Bird] -= 1
                 unused_workshops[clearing_id] -= 1
+        
+        return card.crafting_VP
     
     def count_actions_taken(self, actions_taken: list[Action]):
         count = 0

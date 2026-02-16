@@ -92,7 +92,8 @@ class Game:
         elif(isinstance(action, DiscardCardAction)):
             self.discard_cards(self.current_player, action.card_ids)
         else:
-            self.current_player.faction.apply_action(action, self.board, self.current_player)
+            vp_scored = self.current_player.faction.apply_action(action, self.board, self.current_player)
+            self.current_player.score += vp_scored
 
     def play_card(self, player: Player, card_idx: int):
         card = player.hand[card_idx]
